@@ -1,4 +1,5 @@
 import connect.network.nio.NioClientFactory;
+import connect.network.nio.NioSSLFactory;
 import connect.network.nio.NioServerTask;
 import util.LogDog;
 
@@ -11,12 +12,12 @@ public class HttpProxyServer extends NioServerTask {
         if (isSuccess) {
             LogDog.d("==> HttpProxyServer start success !!! ");
             NioClientFactory.getFactory().open();
+            NioClientFactory.getFactory().setSslFactory(new NioSSLFactory("SSL"));
         }
     }
 
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
-        LogDog.d("==> HttpProxyServer has client connect ing... !!! ");
         HttpProxyClient client = new HttpProxyClient();
         client.setChannel(channel);
         NioClientFactory.getFactory().addTask(client);

@@ -6,7 +6,7 @@ public class Proxy {
     public static void main(String[] args){
         HttpProxyServer httpProxyServer =  new HttpProxyServer();
         String host = NetUtils.getLocalIp("wlan");
-        httpProxyServer.setAddress(host,8888);
+        httpProxyServer.setAddress(host,7777);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
     }
