@@ -12,14 +12,20 @@ public class HttpProxyServer extends NioServerTask {
         if (isSuccess) {
             LogDog.d("==> HttpProxyServer start success !!! ");
             NioClientFactory.getFactory().open();
-            NioClientFactory.getFactory().setSslFactory(new NioSSLFactory("SSL"));
+//            InputStream inputStream = Proxy.class.getClassLoader().getResourceAsStream("ssl_ks");
+//            NioClientFactory.getFactory().setSslFactory(new TestSSLFactory("SSL", inputStream));
+            NioClientFactory.getFactory().setSSlFactory(new NioSSLFactory("SSL"));
+//            try {
+//                inputStream.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
     }
 
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
-        HttpProxyClient client = new HttpProxyClient();
-        client.setChannel(channel);
+        HttpProxyClient client = new HttpProxyClient(channel);
         NioClientFactory.getFactory().addTask(client);
     }
 

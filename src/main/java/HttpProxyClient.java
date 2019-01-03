@@ -10,7 +10,8 @@ import java.nio.channels.SocketChannel;
 public class HttpProxyClient extends NioClientTask {
     private NioSender sender;
 
-    public HttpProxyClient() {
+    public HttpProxyClient(SocketChannel channel) {
+        super(channel);
         setReceive(new NioReceive(this, "onReceive"));
         sender = new HttpSender(this);
         setSender(sender);
@@ -20,10 +21,29 @@ public class HttpProxyClient extends NioClientTask {
         if (data.length == 0) {
             NioClientFactory.getFactory().removeTask(this);
         }
-        ProxyConnectClient connectClient = new ProxyConnectClient(data, sender);
-        NioClientFactory.getFactory().addTask(connectClient);
-    }
 
+        String proxyData = new String(data);
+
+        String[] args = proxyData.split("\r\n");
+        if (args == null || args.length <= 1) {
+            return;
+        }
+        String[] tmp = args[1].split(":");
+        if (tmp == null || tmp.length == 0) {
+            return;
+        }
+        LogDog.d("==> ProxyConnectClient request address = " + args[1]);
+
+        String host = tmp[1].trim();
+        //过滤google地址
+        if (!host.contains("google")) {
+            int port = tmp.length == 2 ? 80 : Integer.parseInt(tmp[2]);
+            ProxyConnectClient connectClient = new ProxyConnectClient(data, host, port, sender);
+            NioClientFactory.getFactory().addTask(connectClient);
+        } else {
+            NioClientFactory.getFactory().removeTask(this);
+        }
+    }
 
 
     @Override
