@@ -1,3 +1,5 @@
+package proxy;
+
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceive;
@@ -32,7 +34,7 @@ public class HttpProxyClient extends NioClientTask {
         if (tmp == null || tmp.length == 0) {
             return;
         }
-        LogDog.d("==> ProxyConnectClient request address = " + args[1]);
+        LogDog.d("==> proxy.ProxyConnectClient request address = " + args[1]);
 
         String host = tmp[1].trim();
         //过滤google地址
@@ -61,6 +63,6 @@ public class HttpProxyClient extends NioClientTask {
 
     @Override
     protected void onCloseSocketChannel() {
-        LogDog.e("==> HttpProxyClient close !!! ");
+        LogDog.e("==> proxy.HttpProxyClient close !!! ");
     }
 }

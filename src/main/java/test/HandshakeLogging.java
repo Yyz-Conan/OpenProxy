@@ -1,3 +1,5 @@
+package test;
+
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.InputStream;

@@ -1,3 +1,5 @@
+package proxy;
+
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioSSLFactory;
 import connect.network.nio.NioServerTask;
@@ -10,10 +12,10 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onOpenServerChannel(boolean isSuccess) {
         if (isSuccess) {
-            LogDog.d("==> HttpProxyServer start success !!! ");
+            LogDog.d("==> proxy.HttpProxyServer start success !!! ");
             NioClientFactory.getFactory().open();
-//            InputStream inputStream = Proxy.class.getClassLoader().getResourceAsStream("ssl_ks");
-//            NioClientFactory.getFactory().setSslFactory(new TestSSLFactory("SSL", inputStream));
+//            InputStream inputStream = ProxyMain.class.getClassLoader().getResourceAsStream("ssl_ks");
+//            NioClientFactory.getFactory().setSslFactory(new test.TestSSLFactory("SSL", inputStream));
             NioClientFactory.getFactory().setSSlFactory(new NioSSLFactory("SSL"));
 //            try {
 //                inputStream.close();
@@ -31,6 +33,6 @@ public class HttpProxyServer extends NioServerTask {
 
     @Override
     protected void onCloseServerChannel() {
-        LogDog.e("==> HttpProxyServer close ing... !!! ");
+        LogDog.e("==> proxy.HttpProxyServer close ing... !!! ");
     }
 }

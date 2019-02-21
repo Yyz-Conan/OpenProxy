@@ -1,3 +1,5 @@
+package proxy;
+
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceive;
