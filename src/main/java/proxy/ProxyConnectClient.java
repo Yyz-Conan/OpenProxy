@@ -8,6 +8,9 @@ import util.LogDog;
 
 import java.net.InetAddress;
 
+/**
+ * 代理转发客户请求
+ */
 public class ProxyConnectClient extends NioClientTask {
 
     private NioSender target;
@@ -38,9 +41,9 @@ public class ProxyConnectClient extends NioClientTask {
         }
         String html = new String(data);
         if (html.length() > 20) {
-            LogDog.d("==> onHttpSubmitCallBack = " + html.substring(0, 20));
+            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html.substring(0, 20));
         } else {
-            LogDog.d("==> onHttpSubmitCallBack = " + html);
+            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html);
         }
         target.sendData(data);
     }

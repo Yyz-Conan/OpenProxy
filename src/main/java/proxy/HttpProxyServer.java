@@ -13,15 +13,15 @@ public class HttpProxyServer extends NioServerTask {
     protected void onOpenServerChannel(boolean isSuccess) {
         if (isSuccess) {
             LogDog.d("==> proxy.HttpProxyServer start success !!! ");
-            NioClientFactory.getFactory().open();
 //            InputStream inputStream = ProxyMain.class.getClassLoader().getResourceAsStream("ssl_ks");
 //            NioClientFactory.getFactory().setSslFactory(new test.TestSSLFactory("SSL", inputStream));
-            NioClientFactory.getFactory().setSSlFactory(new NioSSLFactory("SSL"));
 //            try {
 //                inputStream.close();
 //            } catch (IOException e) {
 //                e.printStackTrace();
 //            }
+            NioClientFactory.getFactory().setSSlFactory(new NioSSLFactory("SSL"));
+            NioClientFactory.getFactory().open();
         }
     }
 

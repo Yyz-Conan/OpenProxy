@@ -9,6 +9,9 @@ import util.LogDog;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
+/**
+ * 接收处理客户请求
+ */
 public class HttpProxyClient extends NioClientTask {
     private NioSender sender;
 
@@ -25,6 +28,7 @@ public class HttpProxyClient extends NioClientTask {
         }
 
         String proxyData = new String(data);
+        LogDog.v("==##> HttpProxyClient onReceive proxyData = " + proxyData);
 
         String[] args = proxyData.split("\r\n");
         if (args == null || args.length <= 1) {
@@ -34,7 +38,7 @@ public class HttpProxyClient extends NioClientTask {
         if (tmp == null || tmp.length == 0) {
             return;
         }
-        LogDog.d("==> proxy.ProxyConnectClient request address = " + args[1]);
+        LogDog.d("==> HttpProxyClient onReceive request address = " + args[1]);
 
         String host = tmp[1].trim();
         //过滤google地址
