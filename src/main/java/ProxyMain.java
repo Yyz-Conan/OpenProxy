@@ -1,18 +1,7 @@
-import connect.network.nio.NioClientFactory;
-import connect.network.nio.NioSSLFactory;
 import connect.network.nio.NioServerFactory;
 import proxy.HttpProxyServer;
-import test.HttpClient;
 import util.LogDog;
 import util.NetUtils;
-
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import java.io.*;
-import java.nio.channels.SocketChannel;
-import java.security.KeyStore;
 
 public class ProxyMain {
 
@@ -27,13 +16,13 @@ public class ProxyMain {
         NioServerFactory.getFactory().addTask(httpProxyServer);
 
 
-        HttpClient httpClient = new HttpClient("www.baidu.com", 443);
-        String keyPath = HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
-        String password = "changeit";
-        NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
-        NioClientFactory.getFactory().setSSlFactory(sslFactory);
-        NioClientFactory.getFactory().open();
-        NioClientFactory.getFactory().addTask(httpClient);
+//        HttpClient httpClient = new HttpClient("www.baidu.com", 443);
+//        String keyPath = HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
+//        String password = "changeit";
+//        NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
+//        NioClientFactory.getFactory().setSSlFactory(sslFactory);
+//        NioClientFactory.getFactory().open();
+//        NioClientFactory.getFactory().addTask(httpClient);
 
 
 //        String host = null;

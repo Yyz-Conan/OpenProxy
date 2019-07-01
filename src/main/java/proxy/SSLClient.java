@@ -1,6 +1,5 @@
 package proxy;
 
-import connect.network.base.joggle.ISender;
 import connect.network.tcp.TcpClientTask;
 import connect.network.tcp.TcpReceive;
 import connect.network.tcp.TcpSender;
@@ -9,14 +8,12 @@ import util.LogDog;
 import java.net.Socket;
 
 public class SSLClient extends TcpClientTask {
-    private ISender nioClientSender;
 
-    public SSLClient(Socket socket, ISender sender) {
+    public SSLClient(Socket socket) {
         super(socket);
         setSender(new TcpSender());
         setReceive(new TcpReceive(this, "onReceiveSSL"));
         setConnectTimeout(100);
-        this.nioClientSender = sender;
     }
 
     @Override
@@ -35,6 +32,5 @@ public class SSLClient extends TcpClientTask {
 
     private void onReceiveSSL(byte[] data) {
         LogDog.v("==##> SSLClient onReceiveSSL data = " + new String(data));
-        nioClientSender.sendData(data);
     }
 }
