@@ -4,8 +4,10 @@ import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceive;
 import connect.network.nio.NioSender;
+import connect.network.tcp.TcpClientFactory;
 import util.LogDog;
 
+import javax.net.ssl.SSLSocket;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
@@ -13,13 +15,12 @@ import java.nio.channels.SocketChannel;
  * 接收处理客户请求
  */
 public class HttpProxyClient extends NioClientTask {
-    private NioSender sender;
+//    private NioSender sender;
 
     public HttpProxyClient(SocketChannel channel) {
         super(channel);
         setReceive(new NioReceive(this, "onReceive"));
-        sender = new HttpSender(this);
-        setSender(sender);
+        setSender(new HttpSender(this));
     }
 
     private void onReceive(byte[] data) {
@@ -44,7 +45,7 @@ public class HttpProxyClient extends NioClientTask {
         //过滤google地址
         if (!host.contains("google")) {
             int port = tmp.length == 2 ? 80 : Integer.parseInt(tmp[2]);
-            ProxyConnectClient connectClient = new ProxyConnectClient(data, host, port, sender);
+            ProxyConnectClient connectClient = new ProxyConnectClient(data, host, port, getSender());
             NioClientFactory.getFactory().addTask(connectClient);
         } else {
             NioClientFactory.getFactory().removeTask(this);
@@ -62,6 +63,12 @@ public class HttpProxyClient extends NioClientTask {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+//            if (getPort() == 443) {
+//                SSLSocket sslSocket = getSSLSSocket();
+//                TcpClientFactory.getFactory().open();
+//                SSLClient sslClient = new SSLClient(sslSocket);
+//                TcpClientFactory.getFactory().addTask(sslClient);
+//            }
         }
     }
 

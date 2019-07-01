@@ -13,6 +13,7 @@ public class HttpProxyServer extends NioServerTask {
     protected void onOpenServerChannel(boolean isSuccess) {
         if (isSuccess) {
             LogDog.d("==> proxy.HttpProxyServer start success !!! ");
+//            HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
 //            InputStream inputStream = ProxyMain.class.getClassLoader().getResourceAsStream("ssl_ks");
 //            NioClientFactory.getFactory().setSslFactory(new test.TestSSLFactory("SSL", inputStream));
 //            try {
@@ -20,8 +21,19 @@ public class HttpProxyServer extends NioServerTask {
 //            } catch (IOException e) {
 //                e.printStackTrace();
 //            }
-            NioClientFactory.getFactory().setSSlFactory(new NioSSLFactory("SSL"));
-            NioClientFactory.getFactory().open();
+            try {
+                String keyPath = HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
+                String password = "changeit";
+                NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
+                NioClientFactory.getFactory().setSSlFactory(sslFactory);
+                NioClientFactory.getFactory().open();
+
+//                NioSSLFactory sslFactory = new NioSSLFactory("TLS");
+//                NioClientFactory.getFactory().setSSlFactory(sslFactory);
+//                NioClientFactory.getFactory().open();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

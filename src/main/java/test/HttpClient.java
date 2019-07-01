@@ -1,9 +1,17 @@
 package test;
 
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceive;
 import connect.network.nio.NioSender;
+import connect.network.tcp.TcpClientFactory;
+import proxy.SSLClient;
+import proxy.SSLNioClient;
 import util.LogDog;
+
+import javax.net.ssl.SSLSocket;
+import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
 public class HttpClient extends NioClientTask {
 
@@ -18,16 +26,28 @@ public class HttpClient extends NioClientTask {
     @Override
     protected void onConnectSocketChannel(boolean isConnect) {
         LogDog.v("==##> HttpClient onConnectSocketChannel isConnect = " + isConnect);
-        String data = "CONNECT offlintab.firefoxchina.cn:443 HTTP/1.1\n" +
-                "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:67.0) Gecko/20100101 Firefox/67.0\n" +
-                "Proxy-Connection: keep-alive\n" +
-                "Connection: keep-alive\n" +
-                "Host: offlintab.firefoxchina.cn:443\n" +
-                "\n";
-        getSender().sendData(data.getBytes());
+        if (isConnect) {
+            SSLSocket sslSocket = getSSLSSocket();
+            TcpClientFactory.getFactory().open();
+            SSLClient sslClient = new SSLClient(sslSocket, getSender());
+            TcpClientFactory.getFactory().addTask(sslClient);
+
+            SSLNioClient sslNioClient = new SSLNioClient();
+            NioClientFactory.getFactory().addTask(sslNioClient);
+
+            getSender().sendData(httpsTunnelEstablished());
+        }
     }
 
     private void onReceive(byte[] data) {
         LogDog.v("==##> HttpClient onReceive data = " + new String(data));
+    }
+
+    public static byte[] httpsTunnelEstablished() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("HTTP/1.1 200 Connection Established\r\n");
+        sb.append("Proxy-agent: https://github.com/arloor/proxyme\r\n");
+        sb.append("\r\n");
+        return sb.toString().getBytes();
     }
 }
