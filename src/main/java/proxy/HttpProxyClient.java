@@ -3,6 +3,7 @@ package proxy;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
+import intercept.ProxyFilterManager;
 import util.LogDog;
 
 import java.net.InetSocketAddress;
@@ -33,6 +34,7 @@ public class HttpProxyClient extends NioClientTask {
 
     private void onReceive(byte[] data) {
         if (data.length == 0) {
+//            NioHPCClientFactory.getFactory().removeTask(this);
             NioClientFactory.getFactory().removeTask(this);
         }
 
@@ -52,6 +54,13 @@ public class HttpProxyClient extends NioClientTask {
                 }
             }
         }
+
+        if (ProxyFilterManager.getInstance().isIntercept(host)) {
+//            NioHPCClientFactory.getFactory().removeTask(this);
+            NioClientFactory.getFactory().removeTask(this);
+            return;
+        }
+
         if (Pattern.matches(".* .* HTTP.*", firsLine)) {
             LogDog.v("==##> HttpProxyClient firsLine = " + firsLine);
             LogDog.v("==##> HttpProxyClient host = " + host);
@@ -59,27 +68,25 @@ public class HttpProxyClient extends NioClientTask {
             String method = requestLineCells[0];
 //            String urlStr = requestLineCells[1];
 //            String protocal = requestLineCells[2];
-            //过滤google地址
-            if (!host.contains("google")) {
-                if ("CONNECT".equals(method)) {
-                    if (remoteSSLClient == null) {
-                        remoteSSLClient = crateSocketChannel(host, port);
-                    } else {
-                        remoteSSLClient.getSender().sendData(data);
-                    }
+            if ("CONNECT".equals(method)) {
+                if (remoteSSLClient == null) {
+                    remoteSSLClient = crateSocketChannel(host, port);
                 } else {
-                    if (remoteClient == null) {
-                        remoteClient = new ProxyConnectClient(this, data, host, port, getSender());
-                        NioClientFactory.getFactory().addTask(remoteClient);
-                    } else {
-                        remoteClient.getSender().sendData(data);
-                    }
+                    remoteSSLClient.getSender().sendData(data);
                 }
             } else {
-                NioClientFactory.getFactory().removeTask(this);
+                if (remoteClient == null) {
+                    remoteClient = new ProxyConnectClient(this, data, host, port, getSender());
+//                    NioHPCClientFactory.getFactory().addTask(remoteClient);
+                    NioClientFactory.getFactory().addTask(remoteClient);
+                } else {
+                    remoteClient.getSender().sendData(data);
+                }
             }
         } else {
-            remoteSSLClient.getSender().sendData(data);
+            if (remoteSSLClient != null) {
+                remoteSSLClient.getSender().sendData(data);
+            }
         }
     }
 
@@ -97,6 +104,7 @@ public class HttpProxyClient extends NioClientTask {
             //执行Socket的close方法，该方法也会立即返回
             socket.setSoLinger(true, 0);
             remoteSSLClient = new SSLNioClient(this, remoteChannel, getSender());
+//            NioHPCClientFactory.getFactory().addTask(remoteSSLClient);
             NioClientFactory.getFactory().addTask(remoteSSLClient);
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,6 +117,8 @@ public class HttpProxyClient extends NioClientTask {
         LogDog.e("==> proxy.HttpProxyClient close !!! ");
         HttpProxyServer.localConnectCount--;
         LogDog.d("===================> localConnectCount = " + HttpProxyServer.localConnectCount);
+//        NioHPCClientFactory.getFactory().removeTask(remoteSSLClient);
+//        NioHPCClientFactory.getFactory().removeTask(remoteClient);
         NioClientFactory.getFactory().removeTask(remoteSSLClient);
         NioClientFactory.getFactory().removeTask(remoteClient);
     }

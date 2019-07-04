@@ -27,6 +27,7 @@ public class HttpProxyServer extends NioServerTask {
 //                String password = "changeit";
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
 //                NioClientFactory.getFactory().setSSlFactory(sslFactory);
+//                NioHPCClientFactory.getFactory(2).open();
                 NioClientFactory.getFactory().open();
 
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS");
@@ -41,6 +42,7 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
         HttpProxyClient client = new HttpProxyClient(channel);
+//        NioHPCClientFactory.getFactory().addTask(client);
         NioClientFactory.getFactory().addTask(client);
         HttpProxyServer.localConnectCount++;
         LogDog.d("===================> localConnectCount = " + HttpProxyServer.localConnectCount);
