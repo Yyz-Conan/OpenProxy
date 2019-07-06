@@ -57,7 +57,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
         whiteList = new ArrayList<>();
 
         for (String item : array) {
-            if (!item.startsWith("//") && !item.startsWith("##")) {
+            if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {
                 String[] itemArray = item.split("!");
                 //添加黑名单
                 blackList.add(itemArray[0]);

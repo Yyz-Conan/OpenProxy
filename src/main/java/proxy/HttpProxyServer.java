@@ -13,7 +13,7 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onOpenServerChannel(boolean isSuccess) {
         if (isSuccess) {
-            LogDog.d("==> proxy.HttpProxyServer start success !!! ");
+            LogDog.d("==> Proxy Server Start Success !!! ");
 //            HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
 //            InputStream inputStream = ProxyMain.class.getClassLoader().getResourceAsStream("ssl_ks");
 //            NioClientFactory.getFactory().setSslFactory(new test.TestSSLFactory("SSL", inputStream));
@@ -45,11 +45,11 @@ public class HttpProxyServer extends NioServerTask {
 //        NioHPCClientFactory.getFactory().addTask(client);
         NioClientFactory.getFactory().addTask(client);
         HttpProxyServer.localConnectCount++;
-        LogDog.d("===================> localConnectCount = " + HttpProxyServer.localConnectCount);
+        LogDog.d("==========================add==============================> localConnectCount = " + HttpProxyServer.localConnectCount);
     }
 
     @Override
     protected void onCloseServerChannel() {
-        LogDog.e("==> proxy.HttpProxyServer close ing... !!! ");
+        LogDog.e("==> Proxy Server close ing... !!! ");
     }
 }

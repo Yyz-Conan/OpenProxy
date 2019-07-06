@@ -1,7 +1,7 @@
 package proxy;
 
-import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
+import connect.network.nio.NioReceive;
 import connect.network.nio.NioSender;
 
 /**
@@ -22,7 +22,7 @@ public class ProxyConnectClient extends NioClientTask {
         this.htmlData = data;
         this.proxyClient = proxyClient;
         setSender(new NioSender());
-        setReceive(new HttpReceive(this, "onHttpSubmitCallBack"));
+        setReceive(new NioReceive(this, "onHttpSubmitCallBack"));
     }
 
     @Override
@@ -34,10 +34,10 @@ public class ProxyConnectClient extends NioClientTask {
     }
 
     private void onHttpSubmitCallBack(byte[] data) {
-        if (data.length == 0) {
-            NioClientFactory.getFactory().removeTask(this);
-            return;
-        }
+//        if (data.length == 0) {
+//            NioClientFactory.getFactory().removeTask(this);
+//            return;
+//        }
 //        String html = new String(data);
 //        if (html.length() > 20) {
 //            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html.substring(0, 20));
