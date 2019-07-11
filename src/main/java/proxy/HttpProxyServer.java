@@ -1,6 +1,6 @@
 package proxy;
 
-import connect.network.nio.NioClientFactory;
+import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioServerTask;
 import util.LogDog;
 
@@ -27,8 +27,8 @@ public class HttpProxyServer extends NioServerTask {
 //                String password = "changeit";
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
 //                NioClientFactory.getFactory().setSSlFactory(sslFactory);
-//                NioHPCClientFactory.getFactory(2).open();
-                NioClientFactory.getFactory().open();
+                NioHPCClientFactory.getFactory(2).open();
+//                NioClientFactory.getFactory().open();
 
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS");
 //                NioClientFactory.getFactory().setSSlFactory(sslFactory);
@@ -42,8 +42,8 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
         HttpProxyClient client = new HttpProxyClient(channel);
-//        NioHPCClientFactory.getFactory().addTask(client);
-        NioClientFactory.getFactory().addTask(client);
+        NioHPCClientFactory.getFactory().addTask(client);
+//        NioClientFactory.getFactory().addTask(client);
         HttpProxyServer.localConnectCount++;
         LogDog.d("==========================add==============================> localConnectCount = " + HttpProxyServer.localConnectCount);
     }
