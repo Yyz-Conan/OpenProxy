@@ -24,7 +24,6 @@ public class ProxyMain {
         httpProxyServer.setAddress(host, 7777);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
-
     }
 
 

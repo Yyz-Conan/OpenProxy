@@ -22,7 +22,7 @@ public class HttpProxyServer extends NioServerTask {
 //            } catch (IOException e) {
 //                e.printStackTrace();
 //            }
-            try {
+//            try {
 //                String keyPath = HttpProxyServer.class.getClassLoader().getResource("cacerts").getPath();
 //                String password = "changeit";
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
@@ -33,9 +33,9 @@ public class HttpProxyServer extends NioServerTask {
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS");
 //                NioClientFactory.getFactory().setSSlFactory(sslFactory);
 //                NioClientFactory.getFactory().open();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
     }
 

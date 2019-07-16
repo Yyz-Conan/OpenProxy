@@ -18,7 +18,7 @@ public class HttpProxyClient extends NioClientTask {
 
     public HttpProxyClient(SocketChannel channel) {
         super(channel);
-//        setConnectTimeout(5000);
+        setConnectTimeout(3000);
         setReceive(new HttpReceive(this, "onReceive"));
         setSender(new NioHPCSender());
     }
@@ -38,6 +38,7 @@ public class HttpProxyClient extends NioClientTask {
 //        }
 
         String proxyData = new String(data);
+//        LogDog.d("==> proxyData = " + proxyData);
         String[] array = proxyData.split("\r\n");
         String firsLine = array[0];
         String host = null;

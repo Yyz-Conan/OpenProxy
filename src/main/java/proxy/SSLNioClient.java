@@ -28,6 +28,7 @@ public class SSLNioClient extends NioClientTask {
         if (localSender == null || localSender == null) {
             throw new NullPointerException("proxyClient and localSender is can not be null !!!");
         }
+        setConnectTimeout(3000);
         this.localSender = localSender;
         this.proxyClient = proxyClient;
         setSender(new NioHPCSender());
@@ -46,14 +47,14 @@ public class SSLNioClient extends NioClientTask {
 //        String html = new String(data);
 //        LogDog.v("==##> SSLNioClient onReceiveSSLNio data = " + html);
         try {
-            localSender.sendDataNow(data);
+            localSender.sendData(data);
         } catch (Exception e) {
         }
     }
 
     private byte[] httpsTunnelEstablished() {
         StringBuffer sb = new StringBuffer();
-        sb.append("HTTP/1.1 200 Connection Established\r\n");
+        sb.append("HTTP/1.1 200 Connection established\r\n");
         sb.append("Proxy-agent: YYD-HttpProxy\r\n");
         sb.append("\r\n");
         return sb.toString().getBytes();
