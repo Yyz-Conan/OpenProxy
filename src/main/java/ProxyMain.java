@@ -1,8 +1,8 @@
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
+import log.LogDog;
 import proxy.HttpProxyServer;
-import util.LogDog;
 import util.NetUtils;
 
 import java.net.URL;
@@ -24,6 +24,7 @@ public class ProxyMain {
         httpProxyServer.setAddress(host, 7777);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
+
     }
 
 

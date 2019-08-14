@@ -4,7 +4,7 @@ import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioHPCSender;
 import intercept.ProxyFilterManager;
-import util.LogDog;
+import log.LogDog;
 
 import java.nio.channels.SocketChannel;
 import java.util.regex.Pattern;

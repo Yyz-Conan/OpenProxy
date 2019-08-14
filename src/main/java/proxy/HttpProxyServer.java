@@ -2,7 +2,7 @@ package proxy;
 
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioServerTask;
-import util.LogDog;
+import log.LogDog;
 
 import java.nio.channels.SocketChannel;
 
