@@ -26,6 +26,4 @@ public class ProxyMain {
         NioServerFactory.getFactory().addTask(httpProxyServer);
 
     }
-
-
 }
