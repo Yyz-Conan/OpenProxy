@@ -6,31 +6,32 @@ import connect.network.nio.NioHPCSender;
 
 import java.nio.channels.SocketChannel;
 
-
+/**
+ * 代理转发客户https请求
+ */
 public class SSLNioClient extends NioClientTask {
     private ISender localSender;
-    private HttpProxyClient proxyClient;
 
-    public SSLNioClient(HttpProxyClient proxyClient, String host, int port, ISender localSender) {
+
+    public SSLNioClient(String host, int port, ISender localSender) {
         super(host, port);
-        init(proxyClient, localSender);
+        init(localSender);
     }
 
-    public SSLNioClient(HttpProxyClient proxyClient, SocketChannel remoteChannel, ISender localSender) {
+    public SSLNioClient(SocketChannel remoteChannel, ISender localSender) {
         super(remoteChannel);
         if (remoteChannel == null) {
             throw new NullPointerException("remoteChannel and localSender is can not be null !!!");
         }
-        init(proxyClient, localSender);
+        init(localSender);
     }
 
-    private void init(HttpProxyClient proxyClient, ISender localSender) {
+    private void init(ISender localSender) {
         if (localSender == null || localSender == null) {
             throw new NullPointerException("proxyClient and localSender is can not be null !!!");
         }
-        setConnectTimeout(3000);
+        setConnectTimeout(0);
         this.localSender = localSender;
-        this.proxyClient = proxyClient;
         setSender(new NioHPCSender());
         setReceive(new HttpReceive(this, "onReceiveSSLNio"));
     }
@@ -60,8 +61,4 @@ public class SSLNioClient extends NioClientTask {
         return sb.toString().getBytes();
     }
 
-    @Override
-    protected void onCloseSocketChannel() {
-        proxyClient.clearSSLNioClient();
-    }
 }

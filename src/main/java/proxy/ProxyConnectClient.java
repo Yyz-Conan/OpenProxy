@@ -5,22 +5,21 @@ import connect.network.nio.NioHPCSender;
 import connect.network.nio.NioSender;
 
 /**
- * 代理转发客户请求
+ * 代理转发客户http请求
  */
 public class ProxyConnectClient extends NioClientTask {
 
     private NioSender target;
     private byte[] htmlData;
-    private HttpProxyClient proxyClient;
 
-    public ProxyConnectClient(HttpProxyClient proxyClient, byte[] data, String host, int port, NioSender target) {
+    public ProxyConnectClient(byte[] data, String host, int port, NioSender target) {
         if (data == null || target == null || host == null || port <= 0) {
             throw new NullPointerException("data host port or target is null !!!");
         }
         setAddress(host, port);
         this.target = target;
         this.htmlData = data;
-        this.proxyClient = proxyClient;
+        setConnectTimeout(0);
         setSender(new NioHPCSender());
         setReceive(new HttpReceive(this, "onHttpSubmitCallBack"));
     }
@@ -48,10 +47,5 @@ public class ProxyConnectClient extends NioClientTask {
 //            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html);
 //        }
         target.sendData(data);
-    }
-
-    @Override
-    protected void onCloseSocketChannel() {
-        proxyClient.clearRemoteClient();
     }
 }

@@ -16,6 +16,8 @@ public class HttpProxyClient extends NioClientTask {
     private SSLNioClient remoteSSLClient = null;
     private ProxyConnectClient remoteClient = null;
 
+    private String host = null;
+
     public HttpProxyClient(SocketChannel channel) {
         super(channel);
         setConnectTimeout(3000);
@@ -23,25 +25,14 @@ public class HttpProxyClient extends NioClientTask {
         setSender(new NioHPCSender());
     }
 
-    public void clearRemoteClient() {
-        remoteClient = null;
-    }
-
-    public void clearSSLNioClient() {
-        remoteSSLClient = null;
-    }
-
     private void onReceive(byte[] data) {
-//        if (data.length == 0) {
-//            NioHPCClientFactory.getFactory().removeTask(this);
-////            NioClientFactory.getFactory().removeTask(this);
-//        }
 
         String proxyData = new String(data);
 //        LogDog.d("==> proxyData = " + proxyData);
+
         String[] array = proxyData.split("\r\n");
         String firsLine = array[0];
-        String host = null;
+//        String host = null;
         int port = 80;
         for (String tmp : array) {
             if (tmp.startsWith("Host: ")) {
@@ -57,7 +48,6 @@ public class HttpProxyClient extends NioClientTask {
 
         if (ProxyFilterManager.getInstance().isIntercept(host)) {
             NioHPCClientFactory.getFactory().removeTask(this);
-//            NioClientFactory.getFactory().removeTask(this);
             return;
         }
 
@@ -68,39 +58,50 @@ public class HttpProxyClient extends NioClientTask {
             String method = requestLineCells[0];
 //            String urlStr = requestLineCells[1];
 //            String protocal = requestLineCells[2];
+
             if ("CONNECT".equals(method)) {
                 if (remoteSSLClient == null) {
-                    remoteSSLClient = new SSLNioClient(this, host, port, getSender());
+                    remoteSSLClient = new SSLNioClient(host, port, getSender());
                     NioHPCClientFactory.getFactory().addTask(remoteSSLClient);
-//                        NioClientFactory.getFactory().addTask(remoteSSLClient);
                 } else {
-                    remoteSSLClient.getSender().sendData(data);
+                    takeSSLClient(data);
+                    LogDog.e("==##> CONNECT remoteSSLClient  = " + host);
                 }
             } else {
                 if (remoteClient == null) {
-                    remoteClient = new ProxyConnectClient(this, data, host, port, getSender());
+                    remoteClient = new ProxyConnectClient(data, host, port, getSender());
                     NioHPCClientFactory.getFactory().addTask(remoteClient);
-//                    NioClientFactory.getFactory().addTask(remoteClient);
                 } else {
-                    remoteClient.getSender().sendData(data);
+                    if (remoteClient.isCloseing()) {
+//                        LogDog.e("==##> e remoteClient 复用链接不存在 = " + host);
+                        NioHPCClientFactory.getFactory().removeTask(this);
+                    } else {
+//                        LogDog.e("==##> s remoteClient 复用请求 = " + host);
+                        remoteClient.getSender().sendData(data);
+                    }
                 }
             }
         } else {
-            if (remoteSSLClient != null) {
-                remoteSSLClient.getSender().sendData(data);
-            }
+            takeSSLClient(data);
+        }
+    }
+
+    private void takeSSLClient(byte[] data) {
+        if (remoteSSLClient != null && !remoteSSLClient.isCloseing()) {
+            remoteSSLClient.getSender().sendData(data);
+//            LogDog.e("==##> s remoteSSLClient 复用请求 = " + host);
+        } else {
+            NioHPCClientFactory.getFactory().removeTask(this);
+//            LogDog.e("==##> e remoteSSLClient 复用链接不存在 = " + host);
         }
     }
 
 
     @Override
     protected void onCloseSocketChannel() {
-        LogDog.e("==> Proxy Local Client close ing !!! ");
-        HttpProxyServer.localConnectCount--;
-        LogDog.d("=====================remover=======================> localConnectCount = " + HttpProxyServer.localConnectCount);
+        LogDog.e("==> Proxy Local Client close ing !!! " + host);
+        LogDog.d("=====================remover=======================> localConnectCount = " + HttpProxyServer.localConnectCount.decrementAndGet());
         NioHPCClientFactory.getFactory().removeTask(remoteSSLClient);
         NioHPCClientFactory.getFactory().removeTask(remoteClient);
-//        NioClientFactory.getFactory().removeTask(remoteSSLClient);
-//        NioClientFactory.getFactory().removeTask(remoteClient);
     }
 }

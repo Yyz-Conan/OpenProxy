@@ -5,10 +5,11 @@ import connect.network.nio.NioServerTask;
 import log.LogDog;
 
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpProxyServer extends NioServerTask {
 
-    public static int localConnectCount = 0;
+    public static volatile AtomicInteger localConnectCount = new AtomicInteger(0);
 
     @Override
     protected void onOpenServerChannel(boolean isSuccess) {
@@ -27,7 +28,7 @@ public class HttpProxyServer extends NioServerTask {
 //                String password = "changeit";
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS", "SunX509", "JKS", keyPath, password);
 //                NioClientFactory.getFactory().setSSlFactory(sslFactory);
-                NioHPCClientFactory.getFactory(2).open();
+            NioHPCClientFactory.getFactory(1).open();
 //                NioClientFactory.getFactory().open();
 
 //                NioSSLFactory sslFactory = new NioSSLFactory("TLS");
@@ -44,8 +45,7 @@ public class HttpProxyServer extends NioServerTask {
         HttpProxyClient client = new HttpProxyClient(channel);
         NioHPCClientFactory.getFactory().addTask(client);
 //        NioClientFactory.getFactory().addTask(client);
-        HttpProxyServer.localConnectCount++;
-        LogDog.d("==========================add==============================> localConnectCount = " + HttpProxyServer.localConnectCount);
+        LogDog.d("==========================add==============================> localConnectCount = " + HttpProxyServer.localConnectCount.incrementAndGet());
     }
 
     @Override
