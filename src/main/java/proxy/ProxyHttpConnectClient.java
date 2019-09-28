@@ -3,16 +3,19 @@ package proxy;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCSender;
 import connect.network.nio.NioSender;
+import util.joggle.JavKeep;
 
 /**
  * 代理转发客户http请求
  */
-public class ProxyConnectClient extends NioClientTask {
+public class ProxyHttpConnectClient extends NioClientTask {
 
     private NioSender target;
     private byte[] htmlData;
 
-    public ProxyConnectClient(byte[] data, String host, int port, NioSender target) {
+    private ConnectPool connectPool = null;
+
+    public ProxyHttpConnectClient(byte[] data, String host, int port, NioSender target) {
         if (data == null || target == null || host == null || port <= 0) {
             throw new NullPointerException("data host port or target is null !!!");
         }
@@ -21,7 +24,7 @@ public class ProxyConnectClient extends NioClientTask {
         this.htmlData = data;
         setConnectTimeout(0);
         setSender(new NioHPCSender());
-        setReceive(new HttpReceive(this, "onHttpSubmitCallBack"));
+        setReceive(new RequestReceive(this, "onReceiveHttpData"));
     }
 
     @Override
@@ -35,17 +38,19 @@ public class ProxyConnectClient extends NioClientTask {
         }
     }
 
-    private void onHttpSubmitCallBack(byte[] data) {
-//        if (data.length == 0) {
-//            NioClientFactory.getFactory().removeTask(this);
-//            return;
-//        }
-//        String html = new String(data);
-//        if (html.length() > 20) {
-//            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html.substring(0, 20));
-//        } else {
-//            LogDog.d("==> ProxyConnectClient onHttpSubmitCallBack = " + html);
-//        }
+    public void setConnectPool(ConnectPool connectPool) {
+        this.connectPool = connectPool;
+    }
+
+    @JavKeep
+    private void onReceiveHttpData(byte[] data) {
         target.sendData(data);
+    }
+
+    @Override
+    protected void onCloseSocketChannel() {
+        if (connectPool != null) {
+            connectPool.remove(getHost());
+        }
     }
 }

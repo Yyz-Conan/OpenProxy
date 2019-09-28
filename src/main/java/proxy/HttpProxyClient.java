@@ -13,26 +13,25 @@ import java.util.regex.Pattern;
  * 接收处理客户请求
  */
 public class HttpProxyClient extends NioClientTask {
-    private SSLNioClient remoteSSLClient = null;
-    private ProxyConnectClient remoteClient = null;
-
-    private String host = null;
+    private String lastHost = null;
+    private ConnectPool connectPool;
 
     public HttpProxyClient(SocketChannel channel) {
         super(channel);
-        setConnectTimeout(3000);
-        setReceive(new HttpReceive(this, "onReceive"));
+        setConnectTimeout(0);
+        connectPool = new ConnectPool();
+        setReceive(new RequestReceive(this, "onReceiveRequestData"));
         setSender(new NioHPCSender());
     }
 
-    private void onReceive(byte[] data) {
-
+    private void onReceiveRequestData(byte[] data) {
+//        LogDog.d("==========================================================================================================");
         String proxyData = new String(data);
 //        LogDog.d("==> proxyData = " + proxyData);
 
         String[] array = proxyData.split("\r\n");
         String firsLine = array[0];
-//        String host = null;
+        String host = null;
         int port = 80;
         for (String tmp : array) {
             if (tmp.startsWith("Host: ")) {
@@ -53,55 +52,70 @@ public class HttpProxyClient extends NioClientTask {
 
         if (Pattern.matches(".* .* HTTP.*", firsLine)) {
 //            LogDog.v("==##> HttpProxyClient firsLine = " + firsLine);
-            LogDog.v("==##> Proxy Local Client host = " + host);
+            LogDog.v("Proxy Request host = " + host);
             String[] requestLineCells = firsLine.split(" ");
             String method = requestLineCells[0];
 //            String urlStr = requestLineCells[1];
-//            String protocal = requestLineCells[2];
+            String protocol = requestLineCells[2];
 
+            NioClientTask clientTask = connectPool.get(host);
             if ("CONNECT".equals(method)) {
-                if (remoteSSLClient == null) {
-                    remoteSSLClient = new SSLNioClient(host, port, getSender());
-                    NioHPCClientFactory.getFactory().addTask(remoteSSLClient);
+                if (clientTask == null) {
+                    creatNewSSLConnect(host, port, protocol);
                 } else {
-                    takeSSLClient(data);
-                    LogDog.e("==##> CONNECT remoteSSLClient  = " + host);
+                    takeSSLClient((ProxyHttpsConnectClient) clientTask, data);
                 }
             } else {
-                if (remoteClient == null) {
-                    remoteClient = new ProxyConnectClient(data, host, port, getSender());
-                    NioHPCClientFactory.getFactory().addTask(remoteClient);
+                if (clientTask == null) {
+                    creatNewConnect(data, host, port);
                 } else {
-                    if (remoteClient.isCloseing()) {
-//                        LogDog.e("==##> e remoteClient 复用链接不存在 = " + host);
-                        NioHPCClientFactory.getFactory().removeTask(this);
-                    } else {
-//                        LogDog.e("==##> s remoteClient 复用请求 = " + host);
-                        remoteClient.getSender().sendData(data);
-                    }
+                    takeClient(clientTask, data);
                 }
             }
         } else {
-            takeSSLClient(data);
+            LogDog.v("Proxy Request last host = " + lastHost);
+            ProxyHttpsConnectClient client = (ProxyHttpsConnectClient) connectPool.get(lastHost);
+            takeSSLClient(client, data);
+        }
+//        LogDog.d("==========================================================================================================");
+    }
+
+    private void creatNewSSLConnect(String host, int port, String protocol) {
+        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, protocol, getSender());
+        sslNioClient.setConnectPool(connectPool);
+        NioHPCClientFactory.getFactory().addTask(sslNioClient);
+        connectPool.put(host, sslNioClient);
+        lastHost = host;
+    }
+
+    private void creatNewConnect(byte[] data, String host, int port) {
+        ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(data, host, port, getSender());
+        connectClient.setConnectPool(connectPool);
+        NioHPCClientFactory.getFactory().addTask(connectClient);
+        connectPool.put(host, connectClient);
+    }
+
+    private void takeSSLClient(ProxyHttpsConnectClient clientTask, byte[] data) {
+        if (!clientTask.isCloseing()) {
+            clientTask.getSender().sendData(data);
+        } else {
+            creatNewSSLConnect(clientTask.getHost(), clientTask.getPort(), clientTask.getProtocol());
         }
     }
 
-    private void takeSSLClient(byte[] data) {
-        if (remoteSSLClient != null && !remoteSSLClient.isCloseing()) {
-            remoteSSLClient.getSender().sendData(data);
-//            LogDog.e("==##> s remoteSSLClient 复用请求 = " + host);
+    private void takeClient(NioClientTask clientTask, byte[] data) {
+        if (!clientTask.isCloseing()) {
+            clientTask.getSender().sendData(data);
         } else {
-            NioHPCClientFactory.getFactory().removeTask(this);
-//            LogDog.e("==##> e remoteSSLClient 复用链接不存在 = " + host);
+            creatNewConnect(data, clientTask.getHost(), clientTask.getPort());
         }
     }
 
 
     @Override
     protected void onCloseSocketChannel() {
-        LogDog.e("==> Proxy Local Client close ing !!! " + host);
-        LogDog.d("=====================remover=======================> localConnectCount = " + HttpProxyServer.localConnectCount.decrementAndGet());
-        NioHPCClientFactory.getFactory().removeTask(remoteSSLClient);
-        NioHPCClientFactory.getFactory().removeTask(remoteClient);
+//        LogDog.e("==> Proxy Local Client close ing !!! " + host);
+        connectPool.destroy();
+//        LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
     }
 }

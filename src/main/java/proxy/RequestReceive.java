@@ -8,10 +8,10 @@ import util.ThreadAnnotation;
 
 import java.nio.channels.SocketChannel;
 
-public class HttpReceive extends NioReceive {
+public class RequestReceive extends NioReceive {
     private NioClientTask nioClientTask;
 
-    public HttpReceive(NioClientTask task, String receiveMethodName) {
+    public RequestReceive(NioClientTask task, String receiveMethodName) {
         super(task, receiveMethodName);
         this.nioClientTask = task;
     }
@@ -24,11 +24,9 @@ public class HttpReceive extends NioReceive {
                 ThreadAnnotation.disposeMessage(this.mReceiveMethodName, this.mReceive, new Object[]{data});
             } else {
                 NioHPCClientFactory.getFactory().removeTask(nioClientTask);
-//                NioClientFactory.getFactory().removeTask(nioClientTask);
             }
         } catch (Exception e) {
             NioHPCClientFactory.getFactory().removeTask(nioClientTask);
-//            NioClientFactory.getFactory().removeTask(nioClientTask);
         }
     }
 }
