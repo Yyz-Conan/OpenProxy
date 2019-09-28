@@ -49,12 +49,18 @@ public class BuiltInProxyFilter implements IProxyFilter {
     private List<String> eight;
     private List<String> nine;
 
-    public BuiltInProxyFilter(String ipTablePath) {
-        byte[] data = FileHelper.readFileMemMap(ipTablePath);
-        String content = new String(data);
-        String[] array = content.split("\r\n");
+    public BuiltInProxyFilter() {
         blackList = new ArrayList<>();
         whiteList = new ArrayList<>();
+    }
+
+    public void init(String ipTablePath) {
+        byte[] data = FileHelper.readFileMemMap(ipTablePath);
+        if (data == null) {
+            return;
+        }
+        String content = new String(data);
+        String[] array = content.split("\r\n");
 
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {

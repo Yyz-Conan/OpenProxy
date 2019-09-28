@@ -14,16 +14,18 @@ public class ProxyMain {
     public static void main(String[] args) {
         //初始化地址过滤器
         URL url = ProxyMain.class.getClassLoader().getResource("AddressTable.dat");
-        BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter(url.getPath());
+        BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
+        proxyFilter.init(url.getPath());
         ProxyFilterManager.getInstance().addFilter(proxyFilter);
 
         //开启代理服务
         HttpProxyServer httpProxyServer = new HttpProxyServer();
         String host = NetUtils.getLocalIp("eth2");
-        LogDog.d("==> proxy.HttpProxyServer host = " + host);
-        httpProxyServer.setAddress(host, 7777);
+        int defaultPort = 7777;
+        httpProxyServer.setAddress(host, defaultPort);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
+        LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
 
     }
 }
