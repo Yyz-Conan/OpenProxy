@@ -23,7 +23,7 @@ public class HttpProxyServer extends NioServerTask {
     protected void onAcceptServerChannel(SocketChannel channel) {
         HttpProxyClient client = new HttpProxyClient(channel);
         NioHPCClientFactory.getFactory().addTask(client);
-//        LogDog.d("---------- add() Connect Count = " + HttpProxyServer.localConnectCount.incrementAndGet());
+        LogDog.d("---------- add() Connect Count = " + HttpProxyServer.localConnectCount.incrementAndGet());
     }
 
     @Override

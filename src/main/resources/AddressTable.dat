@@ -1,8 +1,8 @@
 //拦截地址表，该表每行代表一个地址，包含该字符都会拦截
 push.services.mozilla.com
-google
+#google
 microsoft.com!docs.microsoft.com
-youtube.com
+#youtube.com
 detectportal.firefox.com
 s3m.mediav.com
 img-bss.csdn.net
@@ -19,3 +19,4 @@ t.cn/E2PgiG1
 pic3.iqiyipic.com
 t.cn/E2PgiG1
 gss0.bdstatic.com
+sina.com-h-sina.com

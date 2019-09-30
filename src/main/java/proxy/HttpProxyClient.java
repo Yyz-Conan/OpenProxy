@@ -63,19 +63,23 @@ public class HttpProxyClient extends NioClientTask {
                 if (clientTask == null) {
                     createNewSSLConnect(host, port, protocol);
                 } else {
-                    takeSSLClient((ProxyHttpsConnectClient) clientTask, data);
+                    reuseSSLClient((ProxyHttpsConnectClient) clientTask, data);
                 }
             } else {
                 if (clientTask == null) {
                     createNewConnect(data, host, port);
                 } else {
-                    takeClient(clientTask, data);
+                    reuseClient(clientTask, data);
                 }
             }
         } else {
-            LogDog.v("Proxy Request last host = " + lastHost);
             ProxyHttpsConnectClient client = (ProxyHttpsConnectClient) connectPool.get(lastHost);
-            takeSSLClient(client, data);
+            if (client == null) {
+                LogDog.v("Proxy Request last host = " + lastHost);
+                LogDog.e("复用请求 没有找到对应的链路 " + new String(data));
+                return;
+            }
+            reuseSSLClient(client, data);
         }
 //        LogDog.d("==========================================================================================================");
     }
@@ -93,9 +97,10 @@ public class HttpProxyClient extends NioClientTask {
         connectClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(connectClient);
         connectPool.put(host, connectClient);
+        lastHost = host;
     }
 
-    private void takeSSLClient(ProxyHttpsConnectClient clientTask, byte[] data) {
+    private void reuseSSLClient(ProxyHttpsConnectClient clientTask, byte[] data) {
         if (!clientTask.isCloseing()) {
             clientTask.getSender().sendData(data);
         } else {
@@ -103,8 +108,8 @@ public class HttpProxyClient extends NioClientTask {
         }
     }
 
-    private void takeClient(NioClientTask clientTask, byte[] data) {
-        if (!clientTask.isCloseing()) {
+    private void reuseClient(NioClientTask clientTask, byte[] data) {
+        if (clientTask != null && !clientTask.isCloseing()) {
             clientTask.getSender().sendData(data);
         } else {
             createNewConnect(data, clientTask.getHost(), clientTask.getPort());
@@ -114,8 +119,8 @@ public class HttpProxyClient extends NioClientTask {
 
     @Override
     protected void onCloseSocketChannel() {
-//        LogDog.e("==> Proxy Local Client close ing !!! " + host);
         connectPool.destroy();
-//        LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
+        LogDog.e("==> Proxy Local Client close ing !!! " + lastHost);
+        LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
     }
 }

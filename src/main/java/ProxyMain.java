@@ -14,9 +14,11 @@ public class ProxyMain {
     public static void main(String[] args) {
         //初始化地址过滤器
         URL url = ProxyMain.class.getClassLoader().getResource("AddressTable.dat");
-        BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
-        proxyFilter.init(url.getPath());
-        ProxyFilterManager.getInstance().addFilter(proxyFilter);
+        if (url != null) {
+            BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
+            proxyFilter.init(url.getPath());
+            ProxyFilterManager.getInstance().addFilter(proxyFilter);
+        }
 
         //开启代理服务
         HttpProxyServer httpProxyServer = new HttpProxyServer();

@@ -1,6 +1,7 @@
 package intercept;
 
 import intercept.joggle.IProxyFilter;
+import log.LogDog;
 import storage.FileHelper;
 import util.StringEnvoy;
 
@@ -57,6 +58,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
     public void init(String ipTablePath) {
         byte[] data = FileHelper.readFileMemMap(ipTablePath);
         if (data == null) {
+            LogDog.e("read ip table file error or file is empty!!! ");
             return;
         }
         String content = new String(data);
