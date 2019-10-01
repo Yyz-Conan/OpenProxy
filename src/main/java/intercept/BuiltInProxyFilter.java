@@ -55,6 +55,15 @@ public class BuiltInProxyFilter implements IProxyFilter {
         whiteList = new ArrayList<>();
     }
 
+    public void init(byte[] data) {
+        if (data == null) {
+            LogDog.e("read ip table file error or file is empty!!! ");
+            return;
+        }
+        String content = new String(data);
+        initImpl(content);
+    }
+
     public void init(String ipTablePath) {
         byte[] data = FileHelper.readFileMemMap(ipTablePath);
         if (data == null) {
@@ -62,7 +71,11 @@ public class BuiltInProxyFilter implements IProxyFilter {
             return;
         }
         String content = new String(data);
-        String[] array = content.split("\r\n");
+        initImpl(content);
+    }
+
+    private void initImpl(String content) {
+        String[] array = content.split("\n");
 
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {
@@ -75,6 +88,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
                 }
             }
         }
+        LogDog.d("Load filter ingress configuration , Number of blacklists = " + blackList.size() + " Number of whitelists = " + whiteList.size());
     }
 
     public boolean isIntercept(String host) {

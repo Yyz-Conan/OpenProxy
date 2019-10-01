@@ -1,4 +1,4 @@
-//拦截地址表，该表每行代表一个地址，包含该字符都会拦截
+//本配置文件作用是拦截域名，拦截规则是请求域名包含有以下则拦截，!表示除外
 push.services.mozilla.com
 #google
 microsoft.com!docs.microsoft.com
@@ -15,7 +15,6 @@ c.93hdw9.com
 img.kukan5.com
 r13---sn-2x3een7e.gvt1.com
 gma.alicdn.com
-t.cn/E2PgiG1
 pic3.iqiyipic.com
 t.cn/E2PgiG1
 gss0.bdstatic.com
