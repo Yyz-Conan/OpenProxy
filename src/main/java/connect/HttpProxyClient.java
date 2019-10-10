@@ -1,4 +1,4 @@
-package proxy;
+package connect;
 
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
@@ -26,8 +26,12 @@ public class HttpProxyClient extends NioClientTask {
 
     private void onReceiveRequestData(byte[] data) {
 //        LogDog.d("==========================================================================================================");
-        String proxyData = new String(data);
-//        LogDog.d("==> proxyData = " + proxyData);
+        String proxyData;
+//        if (data.length < 300) {
+            proxyData = new String(data);
+//        } else {
+//            proxyData = new String(data, 0, 100);
+//        }
 
         String[] array = proxyData.split("\r\n");
         String firsLine = array[0];
@@ -52,7 +56,7 @@ public class HttpProxyClient extends NioClientTask {
 
         if (Pattern.matches(".* .* HTTP.*", firsLine)) {
 //            LogDog.v("==##> HttpProxyClient firsLine = " + firsLine);
-            LogDog.v("Proxy Request host = " + host);
+            LogDog.v("Proxy Request host = " + host + " obj = " + toString());
             String[] requestLineCells = firsLine.split(" ");
             String method = requestLineCells[0];
 //            String urlStr = requestLineCells[1];
@@ -75,12 +79,13 @@ public class HttpProxyClient extends NioClientTask {
         } else {
             ProxyHttpsConnectClient client = (ProxyHttpsConnectClient) connectPool.get(lastHost);
             if (client == null) {
-                LogDog.v("Proxy Request last host = " + lastHost);
+                LogDog.v("Last Host Proxy Request  = " + lastHost + " obj = " + toString());
                 LogDog.e("复用请求 没有找到对应的链路 " + new String(data));
                 return;
             }
             reuseSSLClient(client, data);
         }
+        LogDog.d("==> proxyData = " + data.length + " obj = " + toString());
 //        LogDog.d("==========================================================================================================");
     }
 
@@ -88,7 +93,6 @@ public class HttpProxyClient extends NioClientTask {
         ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, protocol, getSender());
         sslNioClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(sslNioClient);
-        connectPool.put(host, sslNioClient);
         lastHost = host;
     }
 
@@ -96,7 +100,6 @@ public class HttpProxyClient extends NioClientTask {
         ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(data, host, port, getSender());
         connectClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(connectClient);
-        connectPool.put(host, connectClient);
         lastHost = host;
     }
 
@@ -120,7 +123,7 @@ public class HttpProxyClient extends NioClientTask {
     @Override
     protected void onCloseSocketChannel() {
         connectPool.destroy();
-        LogDog.e("==> Proxy Local Client close ing !!! " + lastHost);
+        LogDog.e("==> Proxy Local Client close ing !!! " + lastHost + " obj = " + toString());
         LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
     }
 }

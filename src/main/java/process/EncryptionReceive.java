@@ -1,27 +1,23 @@
-package proxy;
+package process;
 
+import connect.RequestReceive;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
-import connect.network.nio.NioReceive;
 import util.IoEnvoy;
 import util.ThreadAnnotation;
 
-import java.nio.channels.SocketChannel;
+public class EncryptionReceive extends RequestReceive {
 
-public class RequestReceive extends NioReceive {
-    private NioClientTask nioClientTask;
-
-    public RequestReceive(NioClientTask task, String receiveMethodName) {
+    public EncryptionReceive(NioClientTask task, String receiveMethodName) {
         super(task, receiveMethodName);
-        this.nioClientTask = task;
     }
 
     @Override
-    protected void onRead(SocketChannel channel) {
+    protected void onRead() {
         try {
             byte[] data = IoEnvoy.tryRead(channel);
             if (data != null) {
-                ThreadAnnotation.disposeMessage(this.mReceiveMethodName, this.mReceive, new Object[]{data});
+                ThreadAnnotation.disposeMessage(this.mReceiveMethodName, this.mReceive, data);
             } else {
                 NioHPCClientFactory.getFactory().removeTask(nioClientTask);
             }

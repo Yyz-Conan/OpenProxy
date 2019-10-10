@@ -1,8 +1,8 @@
+import connect.HttpProxyServer;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
 import log.LogDog;
-import proxy.HttpProxyServer;
 import storage.FileHelper;
 import util.IoEnvoy;
 import util.NetUtils;
@@ -19,6 +19,11 @@ public class ProxyMain {
 
     // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
+        startServer();
+    }
+
+
+    public static void startServer() {
         Properties properties = System.getProperties();
         String value = properties.getProperty("sun.java.command");
 
@@ -62,7 +67,5 @@ public class ProxyMain {
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
         LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
-
-
     }
 }

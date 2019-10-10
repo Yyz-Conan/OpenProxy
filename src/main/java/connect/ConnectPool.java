@@ -1,4 +1,4 @@
-package proxy;
+package connect;
 
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;

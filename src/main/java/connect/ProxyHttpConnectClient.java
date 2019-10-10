@@ -1,7 +1,6 @@
-package proxy;
+package connect;
 
 import connect.network.nio.NioClientTask;
-import connect.network.nio.NioHPCSender;
 import connect.network.nio.NioSender;
 import util.joggle.JavKeep;
 
@@ -23,7 +22,7 @@ public class ProxyHttpConnectClient extends NioClientTask {
         this.target = target;
         this.htmlData = data;
         setConnectTimeout(0);
-        setSender(new NioHPCSender());
+        setSender(new RequestSender());
         setReceive(new RequestReceive(this, "onReceiveHttpData"));
     }
 
@@ -31,7 +30,8 @@ public class ProxyHttpConnectClient extends NioClientTask {
     protected void onConnectSocketChannel(boolean isConnect) {
         if (isConnect) {
             try {
-                getSender().sendData(htmlData);
+                getSender().sendDataNow(htmlData);
+                connectPool.put(getHost(), this);
             } catch (Exception e) {
             }
             htmlData = null;
@@ -52,5 +52,7 @@ public class ProxyHttpConnectClient extends NioClientTask {
         if (connectPool != null) {
             connectPool.remove(getHost());
         }
+        RequestSender sender = getSender();
+        sender.destroy();
     }
 }

@@ -1,8 +1,7 @@
-package proxy;
+package connect;
 
 import connect.network.base.joggle.ISender;
 import connect.network.nio.NioClientTask;
-import connect.network.nio.NioHPCSender;
 import util.StringEnvoy;
 import util.joggle.JavKeep;
 
@@ -44,7 +43,7 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         }
         setConnectTimeout(0);
         this.localSender = localSender;
-        setSender(new NioHPCSender());
+        setSender(new RequestSender());
         setReceive(new RequestReceive(this, "onReceiveHttpsData"));
     }
 
@@ -52,7 +51,8 @@ public class ProxyHttpsConnectClient extends NioClientTask {
     protected void onConnectSocketChannel(boolean isConnect) {
         if (isConnect) {
             //当前是客户端第一次访问
-            localSender.sendData(httpsTunnelEstablished());
+            localSender.sendDataNow(httpsTunnelEstablished());
+            connectPool.put(getHost(), this);
         }
     }
 
@@ -69,6 +69,8 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         if (connectPool != null) {
             connectPool.remove(getHost());
         }
+        RequestSender sender = getSender();
+        sender.destroy();
     }
 
     private byte[] httpsTunnelEstablished() {
