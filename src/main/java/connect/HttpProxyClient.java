@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  */
 public class HttpProxyClient extends NioClientTask {
     private String lastHost = null;
+    //    private String host = null;
     private ConnectPool connectPool;
 
     public HttpProxyClient(SocketChannel channel) {
@@ -24,11 +25,16 @@ public class HttpProxyClient extends NioClientTask {
         setSender(new NioHPCSender());
     }
 
+//    @Override
+//    protected void onConnectSocketChannel(boolean isConnect) {
+//        LogDog.d("==> isConnect = " + isConnect + " obj = " + HttpProxyClient.this.toString());
+//    }
+
     private void onReceiveRequestData(byte[] data) {
 //        LogDog.d("==========================================================================================================");
         String proxyData;
 //        if (data.length < 300) {
-            proxyData = new String(data);
+        proxyData = new String(data);
 //        } else {
 //            proxyData = new String(data, 0, 100);
 //        }
@@ -56,7 +62,7 @@ public class HttpProxyClient extends NioClientTask {
 
         if (Pattern.matches(".* .* HTTP.*", firsLine)) {
 //            LogDog.v("==##> HttpProxyClient firsLine = " + firsLine);
-            LogDog.v("Proxy Request host = " + host + " obj = " + toString());
+//            LogDog.v("Proxy Request host = " + host + " obj = " + toString());
             String[] requestLineCells = firsLine.split(" ");
             String method = requestLineCells[0];
 //            String urlStr = requestLineCells[1];
@@ -76,16 +82,23 @@ public class HttpProxyClient extends NioClientTask {
                     reuseClient(clientTask, data);
                 }
             }
+//            LogDog.d("==> Proxy Request host " + host + " proxyData = " + data.length + " obj = " + toString());
+            LogDog.d("==> Proxy Request host " + host + " [ add connect count = " + HttpProxyServer.localConnectCount.get() + " ] " + " obj = " + HttpProxyClient.this.toString());
         } else {
-            ProxyHttpsConnectClient client = (ProxyHttpsConnectClient) connectPool.get(lastHost);
-            if (client == null) {
-                LogDog.v("Last Host Proxy Request  = " + lastHost + " obj = " + toString());
-                LogDog.e("复用请求 没有找到对应的链路 " + new String(data));
-                return;
+            NioClientTask clientTask = connectPool.get(lastHost);
+            if (clientTask instanceof ProxyHttpsConnectClient) {
+                ProxyHttpsConnectClient httpsClient = (ProxyHttpsConnectClient) clientTask;
+                if (httpsClient == null) {
+                    LogDog.d("Last Host Proxy Request  = " + lastHost + " obj = " + HttpProxyClient.this.toString());
+                    LogDog.d("复用请求 没有找到对应的链路 " + new String(data));
+                    NioHPCClientFactory.getFactory().removeTask(this);
+                    return;
+                }
+                reuseSSLClient(httpsClient, data);
+            } else {
+                NioHPCClientFactory.getFactory().removeTask(this);
             }
-            reuseSSLClient(client, data);
         }
-        LogDog.d("==> proxyData = " + data.length + " obj = " + toString());
 //        LogDog.d("==========================================================================================================");
     }
 
@@ -123,7 +136,9 @@ public class HttpProxyClient extends NioClientTask {
     @Override
     protected void onCloseSocketChannel() {
         connectPool.destroy();
-        LogDog.e("==> Proxy Local Client close ing !!! " + lastHost + " obj = " + toString());
-        LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
+        LogDog.d("==> Connect close " + lastHost + " [ remover connect count = " + HttpProxyServer.localConnectCount.decrementAndGet() + " ] " + " obj = " + HttpProxyClient.this.toString());
+
+//        LogDog.d("==> Proxy Local Client close ing !!! " + host + " obj = " + HttpProxyClient.this.toString());
+//        LogDog.d("---------- remover() Connect Count = " + HttpProxyServer.localConnectCount.decrementAndGet());
     }
 }

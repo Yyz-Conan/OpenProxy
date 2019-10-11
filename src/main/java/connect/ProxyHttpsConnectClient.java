@@ -69,8 +69,6 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         if (connectPool != null) {
             connectPool.remove(getHost());
         }
-        RequestSender sender = getSender();
-        sender.destroy();
     }
 
     private byte[] httpsTunnelEstablished() {

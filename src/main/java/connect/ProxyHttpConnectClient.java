@@ -52,7 +52,5 @@ public class ProxyHttpConnectClient extends NioClientTask {
         if (connectPool != null) {
             connectPool.remove(getHost());
         }
-        RequestSender sender = getSender();
-        sender.destroy();
     }
 }

@@ -18,17 +18,19 @@ public class RequestReceive extends NioReceive {
 
     @Override
     protected void onRead() {
-        try {
-            byte[] data = IoEnvoy.tryRead(channel);
-            if (data != null) {
-                ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
-            } else {
-                LogDog.d(" ==> 收到空的数据 !!!");
+        if (channel.isConnected() && channel.isOpen()) {
+            try {
+                byte[] data = IoEnvoy.tryRead(channel);
+                if (data != null) {
+                    ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
+                } else {
+//                LogDog.e(" ==> 收到空的数据 !!!");
+                    NioHPCClientFactory.getFactory().removeTask(nioClientTask);
+                }
+            } catch (Exception e) {
+                LogDog.e(" ==> 接受数据异常 !!!" + e.getMessage() + " host = " + nioClientTask.getHost() + " obj = " + nioClientTask.toString());
                 NioHPCClientFactory.getFactory().removeTask(nioClientTask);
             }
-        } catch (Exception e) {
-            LogDog.d(" ==> 接受数据异常 !!!");
-            NioHPCClientFactory.getFactory().removeTask(nioClientTask);
         }
     }
 }
