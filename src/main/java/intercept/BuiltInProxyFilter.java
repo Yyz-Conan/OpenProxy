@@ -75,7 +75,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
     }
 
     private void initImpl(String content) {
-        String[] array = content.split("\n");
+        String[] array = content.split("\r\n");
 
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {

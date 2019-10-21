@@ -4,6 +4,7 @@ import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioServerTask;
 import log.LogDog;
 
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,10 +13,10 @@ public class HttpProxyServer extends NioServerTask {
     public static volatile AtomicInteger localConnectCount = new AtomicInteger(0);
 
     @Override
-    protected void onOpenServerChannel(boolean isSuccess) {
+    protected void onConfigServer(boolean isSuccess, ServerSocketChannel channel) {
         if (isSuccess) {
             LogDog.d("==> Proxy Server Start Success !!! ");
-            NioHPCClientFactory.getFactory(1).open();
+            NioHPCClientFactory.getFactory(2).open();
         }
     }
 

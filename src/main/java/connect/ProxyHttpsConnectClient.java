@@ -1,22 +1,26 @@
 package connect;
 
-import connect.network.base.joggle.ISender;
+import connect.network.base.joggle.INetSender;
 import connect.network.nio.NioClientTask;
 import util.StringEnvoy;
 import util.joggle.JavKeep;
+
+import java.nio.channels.SocketChannel;
 
 /**
  * 代理转发客户https请求
  */
 public class ProxyHttpsConnectClient extends NioClientTask {
-    private ISender localSender;
+    private INetSender localSender;
     private String protocol;
     private ConnectPool connectPool = null;
+    private byte[] htmlData;
 
 
-    public ProxyHttpsConnectClient(String host, int port, String protocol, ISender localSender) {
+    public ProxyHttpsConnectClient(byte[] data, String host, int port, String protocol, INetSender localSender) {
         super(host, port);
         this.protocol = StringEnvoy.isEmpty(protocol) ? "HTTP/1.1" : protocol;
+        this.htmlData = data;
         init(localSender);
     }
 
@@ -37,7 +41,7 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         this.connectPool = connectPool;
     }
 
-    private void init(ISender localSender) {
+    private void init(INetSender localSender) {
         if (localSender == null || localSender == null) {
             throw new NullPointerException("proxyClient and localSender is can not be null !!!");
         }
@@ -48,9 +52,9 @@ public class ProxyHttpsConnectClient extends NioClientTask {
     }
 
     @Override
-    protected void onConnectSocketChannel(boolean isConnect) {
+    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
-            //当前是客户端第一次访问
+//            getSender().sendDataNow(htmlData);
             localSender.sendDataNow(httpsTunnelEstablished());
             connectPool.put(getHost(), this);
         }

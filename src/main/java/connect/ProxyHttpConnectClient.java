@@ -4,6 +4,8 @@ import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
 import util.joggle.JavKeep;
 
+import java.nio.channels.SocketChannel;
+
 /**
  * 代理转发客户http请求
  */
@@ -27,14 +29,10 @@ public class ProxyHttpConnectClient extends NioClientTask {
     }
 
     @Override
-    protected void onConnectSocketChannel(boolean isConnect) {
+    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
-            try {
-                getSender().sendDataNow(htmlData);
-                connectPool.put(getHost(), this);
-            } catch (Exception e) {
-            }
-            htmlData = null;
+            getSender().sendDataNow(htmlData);
+            connectPool.put(getHost(), this);
         }
     }
 

@@ -5,6 +5,7 @@ import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioHPCSender;
 import intercept.ProxyFilterManager;
 import log.LogDog;
+import util.StringEnvoy;
 
 import java.nio.channels.SocketChannel;
 import java.util.regex.Pattern;
@@ -26,18 +27,13 @@ public class HttpProxyClient extends NioClientTask {
     }
 
 //    @Override
-//    protected void onConnectSocketChannel(boolean isConnect) {
+//    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
 //        LogDog.d("==> isConnect = " + isConnect + " obj = " + HttpProxyClient.this.toString());
 //    }
 
     private void onReceiveRequestData(byte[] data) {
-//        LogDog.d("==========================================================================================================");
-        String proxyData;
-//        if (data.length < 300) {
-        proxyData = new String(data);
-//        } else {
-//            proxyData = new String(data, 0, 100);
-//        }
+        String proxyData = new String(data);
+//        LogDog.d("==> data = " + proxyData + " obj = " + HttpProxyClient.this.toString());
 
         String[] array = proxyData.split("\r\n");
         String firsLine = array[0];
@@ -55,7 +51,8 @@ public class HttpProxyClient extends NioClientTask {
             }
         }
 
-        if (ProxyFilterManager.getInstance().isIntercept(host)) {
+        if (ProxyFilterManager.getInstance().isIntercept(host) && StringEnvoy.isNotEmpty(host)) {
+//            LogDog.d("black list = " + host + "obj = " + HttpProxyClient.this.toString());
             NioHPCClientFactory.getFactory().removeTask(this);
             return;
         }
@@ -71,7 +68,7 @@ public class HttpProxyClient extends NioClientTask {
             NioClientTask clientTask = connectPool.get(host);
             if ("CONNECT".equals(method)) {
                 if (clientTask == null) {
-                    createNewSSLConnect(host, port, protocol);
+                    createNewSSLConnect(data, host, port, protocol);
                 } else {
                     reuseSSLClient((ProxyHttpsConnectClient) clientTask, data);
                 }
@@ -88,22 +85,16 @@ public class HttpProxyClient extends NioClientTask {
             NioClientTask clientTask = connectPool.get(lastHost);
             if (clientTask instanceof ProxyHttpsConnectClient) {
                 ProxyHttpsConnectClient httpsClient = (ProxyHttpsConnectClient) clientTask;
-                if (httpsClient == null) {
-                    LogDog.d("Last Host Proxy Request  = " + lastHost + " obj = " + HttpProxyClient.this.toString());
-                    LogDog.d("复用请求 没有找到对应的链路 " + new String(data));
-                    NioHPCClientFactory.getFactory().removeTask(this);
-                    return;
-                }
                 reuseSSLClient(httpsClient, data);
             } else {
+                LogDog.d("==? lastHost = " + lastHost + "data = " + proxyData);
                 NioHPCClientFactory.getFactory().removeTask(this);
             }
         }
-//        LogDog.d("==========================================================================================================");
     }
 
-    private void createNewSSLConnect(String host, int port, String protocol) {
-        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, protocol, getSender());
+    private void createNewSSLConnect(byte[] data, String host, int port, String protocol) {
+        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(data, host, port, protocol, getSender());
         sslNioClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(sslNioClient);
         lastHost = host;
@@ -117,15 +108,15 @@ public class HttpProxyClient extends NioClientTask {
     }
 
     private void reuseSSLClient(ProxyHttpsConnectClient clientTask, byte[] data) {
-        if (!clientTask.isCloseing()) {
+        if (!clientTask.isTaskNeedClose()) {
             clientTask.getSender().sendData(data);
         } else {
-            createNewSSLConnect(clientTask.getHost(), clientTask.getPort(), clientTask.getProtocol());
+            createNewSSLConnect(data, clientTask.getHost(), clientTask.getPort(), clientTask.getProtocol());
         }
     }
 
     private void reuseClient(NioClientTask clientTask, byte[] data) {
-        if (clientTask != null && !clientTask.isCloseing()) {
+        if (clientTask != null && !clientTask.isTaskNeedClose()) {
             clientTask.getSender().sendData(data);
         } else {
             createNewConnect(data, clientTask.getHost(), clientTask.getPort());

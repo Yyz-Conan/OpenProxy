@@ -1,9 +1,11 @@
 import connect.HttpProxyServer;
+import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
 import log.LogDog;
 import storage.FileHelper;
+import task.executor.TaskExecutorPoolManager;
 import util.IoEnvoy;
 import util.NetUtils;
 
@@ -24,6 +26,7 @@ public class ProxyMain {
 
 
     public static void startServer() {
+//        test();
         Properties properties = System.getProperties();
         String value = properties.getProperty("sun.java.command");
 
@@ -68,4 +71,5 @@ public class ProxyMain {
         NioServerFactory.getFactory().addTask(httpProxyServer);
         LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
     }
+
 }
