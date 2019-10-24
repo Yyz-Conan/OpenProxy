@@ -16,7 +16,7 @@ public class HttpProxyServer extends NioServerTask {
     protected void onConfigServer(boolean isSuccess, ServerSocketChannel channel) {
         if (isSuccess) {
             LogDog.d("==> Proxy Server Start Success !!! ");
-            NioHPCClientFactory.getFactory(2).open();
+            NioHPCClientFactory.getFactory(1).open();
         }
     }
 

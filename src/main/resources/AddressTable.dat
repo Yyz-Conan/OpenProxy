@@ -1,6 +1,6 @@
 //本配置文件作用是拦截域名，拦截规则是请求域名包含有以下则拦截，!表示除外
 push.services.mozilla.com
-google
+google.com
 microsoft.com!docs.microsoft.com
 #youtube.com
 detectportal.firefox.com

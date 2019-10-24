@@ -72,4 +72,15 @@ public class ProxyMain {
         LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
     }
 
+    private static void test() {
+        TestClient testClient = new TestClient("www.rs05.com", 80);
+        NioHPCClientFactory.getFactory(2).open();
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        NioHPCClientFactory.getFactory().addTask(testClient);
+    }
+
 }
