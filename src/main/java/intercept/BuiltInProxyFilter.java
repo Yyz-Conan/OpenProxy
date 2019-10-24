@@ -7,6 +7,7 @@ import util.StringEnvoy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class BuiltInProxyFilter implements IProxyFilter {
     private List<String> blackList;
@@ -75,7 +76,14 @@ public class BuiltInProxyFilter implements IProxyFilter {
     }
 
     private void initImpl(String content) {
-        String[] array = content.split("\r\n");
+        Properties props = System.getProperties();
+        String os = props.getProperty("os.name");
+        String[] array;
+        if (os.contains("windows")) {
+            array = content.split("\r\n");
+        } else {
+            array = content.split("\n");
+        }
 
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {

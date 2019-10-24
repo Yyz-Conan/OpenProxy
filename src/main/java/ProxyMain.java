@@ -1,5 +1,4 @@
 import connect.HttpProxyServer;
-import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
@@ -70,6 +69,9 @@ public class ProxyMain {
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
         LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
+
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> TaskExecutorPoolManager.getInstance().destroyAll()));
+
     }
 
     private static void test() {
