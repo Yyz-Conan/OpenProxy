@@ -2,6 +2,7 @@ import connect.HttpProxyServer;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
+import intercept.WatchConfigFIleTask;
 import log.LogDog;
 import storage.FileHelper;
 import task.executor.TaskExecutorPoolManager;
@@ -70,19 +71,9 @@ public class ProxyMain {
         NioServerFactory.getFactory().addTask(httpProxyServer);
         LogDog.d("==> HttpProxy Server address = " + host + ":" + defaultPort);
 
-//        Runtime.getRuntime().addShutdownHook(new Thread(() -> TaskExecutorPoolManager.getInstance().destroyAll()));
+        WatchConfigFIleTask watchConfigFIleTask = new WatchConfigFIleTask(filePath);
+        TaskExecutorPoolManager.getInstance().runTask(watchConfigFIleTask, null);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> TaskExecutorPoolManager.getInstance().destroyAll()));
     }
-
-    private static void test() {
-        TestClient testClient = new TestClient("www.rs05.com", 80);
-        NioHPCClientFactory.getFactory(2).open();
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        NioHPCClientFactory.getFactory().addTask(testClient);
-    }
-
 }

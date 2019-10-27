@@ -36,6 +36,10 @@ public class ProxyFilterManager implements IProxyFilter {
         proxyFilterList.remove(filter);
     }
 
+    public void clear() {
+        proxyFilterList.clear();
+    }
+
     @Override
     public boolean isIntercept(String host) {
         if (StringEnvoy.isNotEmpty(host)) {

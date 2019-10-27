@@ -87,7 +87,7 @@ public class HttpProxyClient extends NioClientTask {
                 ProxyHttpsConnectClient httpsClient = (ProxyHttpsConnectClient) clientTask;
                 reuseSSLClient(httpsClient, data);
             } else {
-                LogDog.d("==? lastHost = " + lastHost + "data = " + proxyData);
+                LogDog.d("==? lastHost = " + lastHost + " data = " + proxyData);
                 NioHPCClientFactory.getFactory().removeTask(this);
             }
         }
