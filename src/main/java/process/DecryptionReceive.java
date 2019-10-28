@@ -1,21 +1,16 @@
-package connect;
+package process;
 
+import connect.RequestReceive;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
-import connect.network.nio.NioReceive;
 import log.LogDog;
 import util.IoEnvoy;
 import util.ThreadAnnotation;
 
-public class RequestReceive extends NioReceive {
+public abstract class DecryptionReceive extends RequestReceive {
 
-    protected NioClientTask nioClientTask;
-
-    protected int tryCount = 3;
-
-    public RequestReceive(NioClientTask task, String receiveMethodName) {
+    public DecryptionReceive(NioClientTask task, String receiveMethodName) {
         super(task, receiveMethodName);
-        this.nioClientTask = task;
     }
 
     @Override
@@ -25,6 +20,7 @@ public class RequestReceive extends NioReceive {
                 byte[] data = IoEnvoy.tryRead(channel);
                 if (data != null) {
                     tryCount = 3;
+                    data = onDecrypt(data);
                     ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
                 } else {
 //                    LogDog.e(" ==> 收到空的数据 !!!");
@@ -40,4 +36,5 @@ public class RequestReceive extends NioReceive {
         }
     }
 
+    protected abstract byte[] onDecrypt(byte[] src);
 }

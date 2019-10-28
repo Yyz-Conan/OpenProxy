@@ -1,12 +1,12 @@
 package process;
 
 
-import connect.network.nio.NioHPCSender;
+import connect.RequestSender;
 
 /**
  * 加密发送者
  */
-public abstract class EncryptionSender extends NioHPCSender {
+public abstract class EncryptionSender extends RequestSender {
 
     @Override
     public void sendData(byte[] data) {

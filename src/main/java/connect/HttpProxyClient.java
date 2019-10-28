@@ -33,6 +33,10 @@ public class HttpProxyClient extends NioClientTask {
 
     private void onReceiveRequestData(byte[] data) {
         String proxyData = new String(data);
+        if ("ping".equals(proxyData)) {
+            NioHPCClientFactory.getFactory().removeTask(this);
+            return;
+        }
 //        LogDog.d("==> data = " + proxyData + " obj = " + HttpProxyClient.this.toString());
 
         String[] array = proxyData.split("\r\n");
@@ -68,7 +72,7 @@ public class HttpProxyClient extends NioClientTask {
             NioClientTask clientTask = connectPool.get(host);
             if ("CONNECT".equals(method)) {
                 if (clientTask == null) {
-                    createNewSSLConnect(data, host, port, protocol);
+                    createNewSSLConnect(host, port, protocol);
                 } else {
                     reuseSSLClient((ProxyHttpsConnectClient) clientTask, data);
                 }
@@ -93,15 +97,16 @@ public class HttpProxyClient extends NioClientTask {
         }
     }
 
-    private void createNewSSLConnect(byte[] data, String host, int port, String protocol) {
-        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(data, host, port, protocol, getSender());
+    private void createNewSSLConnect(String host, int port, String protocol) {
+        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, protocol, getSender());
         sslNioClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(sslNioClient);
         lastHost = host;
     }
 
     private void createNewConnect(byte[] data, String host, int port) {
-        ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(data, host, port, getSender());
+        ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(host, port, getSender());
+        connectClient.getSender().sendData(data);
         connectClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(connectClient);
         lastHost = host;
@@ -111,7 +116,7 @@ public class HttpProxyClient extends NioClientTask {
         if (!clientTask.isTaskNeedClose()) {
             clientTask.getSender().sendData(data);
         } else {
-            createNewSSLConnect(data, clientTask.getHost(), clientTask.getPort(), clientTask.getProtocol());
+            createNewSSLConnect(clientTask.getHost(), clientTask.getPort(), clientTask.getProtocol());
         }
     }
 

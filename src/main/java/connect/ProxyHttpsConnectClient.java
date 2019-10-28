@@ -14,13 +14,11 @@ public class ProxyHttpsConnectClient extends NioClientTask {
     private INetSender localSender;
     private String protocol;
     private ConnectPool connectPool = null;
-    private byte[] htmlData;
 
 
-    public ProxyHttpsConnectClient(byte[] data, String host, int port, String protocol, INetSender localSender) {
+    public ProxyHttpsConnectClient(String host, int port, String protocol, INetSender localSender) {
         super(host, port);
         this.protocol = StringEnvoy.isEmpty(protocol) ? "HTTP/1.1" : protocol;
-        this.htmlData = data;
         init(localSender);
     }
 
@@ -54,7 +52,6 @@ public class ProxyHttpsConnectClient extends NioClientTask {
     @Override
     protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
-//            getSender().sendDataNow(htmlData);
             localSender.sendDataNow(httpsTunnelEstablished());
             connectPool.put(getHost(), this);
         }
