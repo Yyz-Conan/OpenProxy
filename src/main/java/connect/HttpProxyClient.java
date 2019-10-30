@@ -23,7 +23,7 @@ public class HttpProxyClient extends NioClientTask {
         setConnectTimeout(0);
         connectPool = new ConnectPool();
         setReceive(new RequestReceive(this, "onReceiveRequestData"));
-        setSender(new NioHPCSender());
+        setSender(new NioHPCSender(this));
     }
 
 //    @Override

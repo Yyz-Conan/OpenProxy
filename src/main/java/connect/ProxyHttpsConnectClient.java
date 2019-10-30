@@ -45,7 +45,7 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         }
         setConnectTimeout(0);
         this.localSender = localSender;
-        setSender(new RequestSender());
+        setSender(new RequestSender(this));
         setReceive(new RequestReceive(this, "onReceiveHttpsData"));
     }
 
