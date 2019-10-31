@@ -5,6 +5,8 @@ import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioHPCSender;
 import intercept.ProxyFilterManager;
 import log.LogDog;
+import process.RSAReceive;
+import process.RSASender;
 import util.StringEnvoy;
 
 import java.nio.channels.SocketChannel;
@@ -18,12 +20,17 @@ public class HttpProxyClient extends NioClientTask {
     //    private String host = null;
     private ConnectPool connectPool;
 
-    public HttpProxyClient(SocketChannel channel) {
+    public HttpProxyClient(SocketChannel channel, boolean isEnableRSA) {
         super(channel);
         setConnectTimeout(0);
         connectPool = new ConnectPool();
-        setReceive(new RequestReceive(this, "onReceiveRequestData"));
-        setSender(new NioHPCSender(this));
+        if (isEnableRSA) {
+            setReceive(new RSAReceive(this, "onReceiveRequestData"));
+            setSender(new RSASender(this));
+        } else {
+            setReceive(new RequestReceive(this, "onReceiveRequestData"));
+            setSender(new RequestSender(this));
+        }
     }
 
 //    @Override

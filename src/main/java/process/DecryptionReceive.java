@@ -30,7 +30,7 @@ public abstract class DecryptionReceive extends RequestReceive {
                     tryCount--;
                 }
             } catch (Exception e) {
-                LogDog.e(" ==> 接受数据异常 !!!" + e.getMessage() + " host = " + nioClientTask.getHost() + " obj = " + nioClientTask.toString());
+                LogDog.e(" ==> 接受数据异常 !!! " + e.getMessage() + " host = " + nioClientTask.getHost() + " obj = " + nioClientTask.toString());
                 NioHPCClientFactory.getFactory().removeTask(nioClientTask);
             }
         }

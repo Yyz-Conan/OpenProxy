@@ -10,6 +10,6 @@ public class RSAReceive extends DecryptionReceive {
 
     @Override
     protected byte[] onDecrypt(byte[] src) {
-        return RSADataEnvoy.getInstance().privateDecrypt(src);
+        return RSADataEnvoy.getInstance().superCipher(src, true, false);
     }
 }

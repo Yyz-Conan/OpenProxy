@@ -5,6 +5,7 @@ import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
 import intercept.WatchConfigFIleTask;
 import log.LogDog;
+import process.RSADataEnvoy;
 import storage.FileHelper;
 import task.executor.TaskExecutorPoolManager;
 import util.IoEnvoy;
@@ -73,14 +74,25 @@ public class ProxyMain {
         ProxyFilterManager.getInstance().addFilter(proxyFilter);
     }
 
+    private static void initRSA() {
+        Properties properties = System.getProperties();
+        String dirPath = properties.getProperty("user.dir");
+        RSADataEnvoy.getInstance().init(dirPath + File.separator + "public.key", dirPath + File.separator + "private.key");
+    }
+
     private static void startServer() {
         String configFile = initEnv(FILE_CONFIG);
         String host = null;
         String port = null;
+        boolean isEnableRSA = false;
         Map<String, String> configMap = AnalysisConfig.analysis(configFile);
         if (configMap != null) {
             host = configMap.get("host");
             port = configMap.get("port");
+            String enableRSA = configMap.get("enableRSA");
+            if (StringEnvoy.isNotEmpty(enableRSA)) {
+                isEnableRSA = Boolean.parseBoolean(enableRSA);
+            }
         }
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
             host = NetUtils.getLocalIp("eth2");
@@ -88,8 +100,11 @@ public class ProxyMain {
         if (StringEnvoy.isEmpty(port)) {
             port = defaultPort;
         }
+        if (isEnableRSA) {
+            initRSA();
+        }
         //开启代理服务
-        HttpProxyServer httpProxyServer = new HttpProxyServer();
+        HttpProxyServer httpProxyServer = new HttpProxyServer(isEnableRSA);
         httpProxyServer.setAddress(host, Integer.parseInt(port));
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
