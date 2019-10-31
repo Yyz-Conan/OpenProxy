@@ -20,6 +20,8 @@ import java.util.Properties;
 
 public class ProxyMain {
 
+    private static final String FILE_PUBLIC_KEY = "public.key";
+    private static final String FILE_PRIVATE_KEY = "private.key";
     private static final String FILE_AT = "AddressTable.dat";
     private static final String FILE_CONFIG = "config.cfg";
     private static final String defaultPort = "7777";
@@ -75,9 +77,9 @@ public class ProxyMain {
     }
 
     private static void initRSA() {
-        Properties properties = System.getProperties();
-        String dirPath = properties.getProperty("user.dir");
-        RSADataEnvoy.getInstance().init(dirPath + File.separator + "public.key", dirPath + File.separator + "private.key");
+        String publicKey = initEnv(FILE_PUBLIC_KEY);
+        String privateKey = initEnv(FILE_PRIVATE_KEY);
+        RSADataEnvoy.getInstance().init(publicKey, privateKey);
     }
 
     private static void startServer() {

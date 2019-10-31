@@ -2,7 +2,6 @@ package connect;
 
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
-import connect.network.nio.NioHPCSender;
 import intercept.ProxyFilterManager;
 import log.LogDog;
 import process.RSAReceive;
