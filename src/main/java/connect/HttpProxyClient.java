@@ -58,6 +58,7 @@ public class HttpProxyClient extends NioClientTask {
                     String portStr = arrayUrl[1];
                     port = Integer.parseInt(portStr);
                 }
+                break;
             }
         }
 
@@ -83,6 +84,9 @@ public class HttpProxyClient extends NioClientTask {
                     reuseSSLClient((ProxyHttpsConnectClient) clientTask, data);
                 }
             } else {
+                String url = "http://" + host + (port != 80 ? ":" + port : "");
+                String newData = proxyData.replace(url, "");
+                data = newData.getBytes();
                 if (clientTask == null) {
                     createNewConnect(data, host, port);
                 } else {

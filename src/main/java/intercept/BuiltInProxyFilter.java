@@ -68,7 +68,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
     public void init(String ipTablePath) {
         byte[] data = FileHelper.readFileMemMap(ipTablePath);
         if (data == null) {
-            LogDog.e("read ip table file error or file is empty!!! ");
+            LogDog.e("read ip table file error or file is empty !!! path = " + ipTablePath);
             return;
         }
         String content = new String(data);
@@ -77,7 +77,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
 
     private void initImpl(String content) {
         Properties props = System.getProperties();
-        String os = props.getProperty("os.name");
+        String os = props.getProperty("os.name").toLowerCase();
         String[] array;
         if (os.contains("windows")) {
             array = content.split("\r\n");
