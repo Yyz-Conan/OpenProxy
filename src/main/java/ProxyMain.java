@@ -1,6 +1,5 @@
 import config.AnalysisConfig;
 import connect.HttpProxyServer;
-import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
@@ -30,7 +29,6 @@ public class ProxyMain {
 
     // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
-//        test();
         initProxyFilter();
         initWatch();
         startServer();
