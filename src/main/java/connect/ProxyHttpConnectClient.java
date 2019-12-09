@@ -13,13 +13,15 @@ public class ProxyHttpConnectClient extends NioClientTask {
 
     private NioSender target;
     private ConnectPool connectPool = null;
+    private byte[] data = null;
 
-    public ProxyHttpConnectClient(String host, int port, NioSender target) {
+    public ProxyHttpConnectClient(String host, int port, NioSender target, byte[] data) {
         if (target == null || host == null || port <= 0) {
             throw new NullPointerException("data host port or target is null !!!");
         }
         setAddress(host, port);
         this.target = target;
+        this.data = data;
         setConnectTimeout(0);
         setSender(new RequestSender(this));
         setReceive(new RequestReceive(this, "onReceiveHttpData"));
@@ -29,6 +31,8 @@ public class ProxyHttpConnectClient extends NioClientTask {
     protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
             connectPool.put(getHost(), this);
+            getSender().sendData(data);
+            data = null;
         }
     }
 

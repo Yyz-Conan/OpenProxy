@@ -10,7 +10,7 @@ public class RequestSender extends NioHPCSender {
     }
 
     @Override
-    protected void onSenderErrorCallBack() {
+    protected void onSenderErrorCallBack(Throwable e) {
         NioHPCClientFactory.getFactory().removeTask(clientTask);
     }
 }

@@ -115,8 +115,7 @@ public class HttpProxyClient extends NioClientTask {
     }
 
     private void createNewConnect(byte[] data, String host, int port) {
-        ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(host, port, getSender());
-        connectClient.getSender().sendData(data);
+        ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(host, port, getSender(), data);
         connectClient.setConnectPool(connectPool);
         NioHPCClientFactory.getFactory().addTask(connectClient);
         lastHost = host;

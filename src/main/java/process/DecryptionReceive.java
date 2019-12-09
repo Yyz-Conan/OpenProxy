@@ -5,7 +5,7 @@ import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
 import log.LogDog;
 import util.IoEnvoy;
-import util.ThreadAnnotation;
+import util.ReflectionCall;
 
 public abstract class DecryptionReceive extends RequestReceive {
 
@@ -21,7 +21,7 @@ public abstract class DecryptionReceive extends RequestReceive {
                 if (data != null) {
                     tryCount = 3;
                     data = onDecrypt(data);
-                    ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
+                    ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{byte[].class}, data);
                 } else {
 //                    LogDog.e(" ==> 收到空的数据 !!!");
                     if (tryCount == 0) {
