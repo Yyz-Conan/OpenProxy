@@ -2,11 +2,13 @@ package connect;
 
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
-import connect.network.nio.NioHPCSender;
+import connect.network.nio.NioSender;
 
-public class RequestSender extends NioHPCSender {
+public class RequestSender extends NioSender {
+    private NioClientTask clientTask;
+
     public RequestSender(NioClientTask clientTask) {
-        super(clientTask);
+        this.clientTask = clientTask;
     }
 
     @Override

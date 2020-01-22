@@ -43,7 +43,7 @@ public class ProxyMain {
 
         if ("ProxyMain".equals(value)) {
             //ide运行模式，则不创建文件
-            URL url = ProxyMain.class.getClassLoader().getResource(configFile);
+            URL url = ProxyMain.class.getResource(configFile);
             if (url != null) {
                 filePath = url.getPath();
             }

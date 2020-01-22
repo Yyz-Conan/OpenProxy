@@ -18,9 +18,12 @@ public class AnalysisConfig {
     }
 
     public static Map<String, String> analysis(String configFile) {
+        if (configFile == null) {
+            return null;
+        }
         Map<String, String> configMap = null;
         File file = new File(configFile);
-        if (file.exists() && !(file.length() > 1024)) {
+        if (file != null && file.exists() && !(file.length() > 1024)) {
             configMap = new HashMap<>();
             BufferedReader reader = null;
             try {

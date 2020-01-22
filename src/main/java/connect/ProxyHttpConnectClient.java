@@ -12,8 +12,7 @@ import java.nio.channels.SocketChannel;
 public class ProxyHttpConnectClient extends NioClientTask {
 
     private NioSender target;
-    private ConnectPool connectPool = null;
-    private byte[] data = null;
+    private byte[] data;
 
     public ProxyHttpConnectClient(String host, int port, NioSender target, byte[] data) {
         if (target == null || host == null || port <= 0) {
@@ -30,25 +29,14 @@ public class ProxyHttpConnectClient extends NioClientTask {
     @Override
     protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
-            connectPool.put(getHost(), this);
+            getSender().setChannel(channel);
             getSender().sendData(data);
             data = null;
         }
     }
 
-    public void setConnectPool(ConnectPool connectPool) {
-        this.connectPool = connectPool;
-    }
-
     @JavKeep
     private void onReceiveHttpData(byte[] data) {
         target.sendData(data);
-    }
-
-    @Override
-    protected void onCloseSocketChannel() {
-        if (connectPool != null) {
-            connectPool.remove(getHost());
-        }
     }
 }
