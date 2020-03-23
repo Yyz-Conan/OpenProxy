@@ -19,7 +19,7 @@ public class HttpProxyServer extends NioServerTask {
     }
 
     @Override
-    protected void onConfigServer(boolean isSuccess, ServerSocketChannel channel) {
+    protected void onBootServerComplete(boolean isSuccess, ServerSocketChannel channel) {
         if (isSuccess) {
             LogDog.d("==> Proxy Server Start Success !!! ");
             NioHPCClientFactory.getFactory(1).open();

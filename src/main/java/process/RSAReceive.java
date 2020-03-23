@@ -1,11 +1,11 @@
 package process;
 
-import connect.network.nio.NioClientTask;
+import connect.network.base.joggle.INetReceive;
 
 public class RSAReceive extends DecryptionReceive {
 
-    public RSAReceive(NioClientTask task, String receiveMethodName) {
-        super(task, receiveMethodName);
+    public RSAReceive(INetReceive receive) {
+        super(receive);
     }
 
     @Override

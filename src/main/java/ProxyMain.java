@@ -3,7 +3,7 @@ import connect.HttpProxyServer;
 import connect.network.nio.NioServerFactory;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
-import intercept.WatchConfigFIleTask;
+import intercept.WatchConfigFileTask;
 import log.LogDog;
 import process.RSADataEnvoy;
 import storage.FileHelper;
@@ -99,7 +99,7 @@ public class ProxyMain {
             }
         }
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
-            host = NetUtils.getLocalIp("eth2");
+            host = NetUtils.getLocalIp("eth0");
         }
         if (StringEnvoy.isEmpty(port)) {
             port = defaultPort;
@@ -117,8 +117,16 @@ public class ProxyMain {
 
     private static void initWatch() {
         Properties properties = System.getProperties();
+        String value = properties.getProperty("sun.java.command");
         String dirPath = properties.getProperty("user.dir");
-        WatchConfigFIleTask watchConfigFIleTask = new WatchConfigFIleTask(dirPath);
-        TaskExecutorPoolManager.getInstance().runTask(watchConfigFIleTask, null);
+        String targetPath;
+        if ("ProxyMain".equals(value)) {
+            //idea模式下
+            targetPath = dirPath + "\\out\\production\\resources\\" + FILE_AT;
+        } else {
+            targetPath = dirPath + "\\" + FILE_AT;
+        }
+        WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);
+        TaskExecutorPoolManager.getInstance().runTask(watchConfigFileTask, null);
     }
 }

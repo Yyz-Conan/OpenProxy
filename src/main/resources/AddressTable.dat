@@ -1,7 +1,7 @@
 //本配置文件作用是拦截域名，拦截规则是请求域名包含有以下则拦截，!表示除外（支持热更新，保存则更新不需要重启）
 push.services.mozilla.com
 google.com
-microsoft.com!docs.microsoft.com
+microsoft.com!docs.microsoft.com!go.microsoft.com
 #youtube.com
 detectportal.firefox.com
 s3m.mediav.com
@@ -14,7 +14,7 @@ c.02kdid.com
 c.93hdw9.com
 img.kukan5.com
 r13---sn-2x3een7e.gvt1.com
-gma.alicdn.com
+#gma.alicdn.com
 pic3.iqiyipic.com
 t.cn/E2PgiG1
 gss0.bdstatic.com
@@ -22,5 +22,8 @@ sina.com-h-sina.com
 classify-client.services.mozilla.com
 detectportal.firefox.com
 offlintab.firefoxchina.cn
+tracking.firefox.com.cn
 nexus-websocket-a.intercom.io
+content-signature-2.cdn.mozilla.net
+safebrowsing.googleapis.com
 adu.g-fox.cn

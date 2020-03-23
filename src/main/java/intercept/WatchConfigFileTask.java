@@ -8,12 +8,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 
-public class WatchConfigFIleTask extends BaseLoopTask {
+public class WatchConfigFileTask extends BaseLoopTask {
     private String targetPath;
     private String targetFile;
     private WatchService watchService;
 
-    public WatchConfigFIleTask(String targetPath) {
+    public WatchConfigFileTask(String targetPath) {
         if (StringEnvoy.isEmpty(targetPath)) {
             throw new NullPointerException("targetPath is null");
         }
@@ -31,8 +31,9 @@ public class WatchConfigFIleTask extends BaseLoopTask {
         try {
             watchService = FileSystems.getDefault().newWatchService();
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
+            LogDog.d("==> monitor " + targetPath + "\\" + targetFile + " profile task started successfully !!!");
         } catch (IOException e) {
-            e.printStackTrace();
+            LogDog.d("==> monitor " + targetPath + "\\" + targetFile + " profile task failed to start !!!" + e.getMessage());
         }
     }
 

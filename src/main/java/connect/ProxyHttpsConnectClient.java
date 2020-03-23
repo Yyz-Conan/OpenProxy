@@ -3,8 +3,9 @@ package connect;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
 import util.StringEnvoy;
-import util.joggle.JavKeep;
 
+import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -13,36 +14,31 @@ import java.nio.channels.SocketChannel;
 public class ProxyHttpsConnectClient extends NioClientTask {
     private NioSender localSender;
     private String protocol;
+    private ICloseListener listener;
 
-
-    public ProxyHttpsConnectClient(String host, int port, String protocol, NioSender localSender) {
-        super(host, port);
+    public ProxyHttpsConnectClient(String host, int port, NioSender localSender, String protocol) {
+        if (localSender == null || host == null || port <= 0) {
+            throw new NullPointerException("data host port or target is null !!!");
+        }
+        setAddress(host, port, false);
+        this.localSender = localSender;
         this.protocol = StringEnvoy.isEmpty(protocol) ? "HTTP/1.1" : protocol;
-        init(localSender);
+        setReceive(new RemoteRequestReceive(localSender));
+        setSender(new NioSender());
     }
 
-    private void init(NioSender localSender) {
-        if (localSender == null || localSender == null) {
-            throw new NullPointerException("proxyClient and localSender is can not be null !!!");
-        }
-        setConnectTimeout(0);
-        this.localSender = localSender;
-        setSender(new RequestSender(this));
-        setReceive(new RequestReceive(this, "onReceiveHttpsData"));
+    public void setOnCloseListener(ICloseListener listener) {
+        this.listener = listener;
     }
 
     @Override
-    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
+    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) throws IOException {
         if (isConnect) {
             getSender().setChannel(channel);
             localSender.sendData(httpsTunnelEstablished());
         }
     }
 
-    @JavKeep
-    private void onReceiveHttpsData(byte[] data) {
-        localSender.sendData(data);
-    }
 
     private byte[] httpsTunnelEstablished() {
         StringBuffer sb = new StringBuffer();
@@ -53,4 +49,10 @@ public class ProxyHttpsConnectClient extends NioClientTask {
         return sb.toString().getBytes();
     }
 
+    @Override
+    protected void onCloseClientChannel() {
+        if (listener != null) {
+            listener.onClose(getHost());
+        }
+    }
 }

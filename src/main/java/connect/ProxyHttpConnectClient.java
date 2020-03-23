@@ -2,8 +2,9 @@ package connect;
 
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
-import util.joggle.JavKeep;
 
+import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -11,23 +12,25 @@ import java.nio.channels.SocketChannel;
  */
 public class ProxyHttpConnectClient extends NioClientTask {
 
-    private NioSender target;
     private byte[] data;
+    private ICloseListener listener;
 
-    public ProxyHttpConnectClient(String host, int port, NioSender target, byte[] data) {
-        if (target == null || host == null || port <= 0) {
+    public ProxyHttpConnectClient(String host, int port, NioSender localTarget, byte[] data) {
+        if (localTarget == null || host == null || port <= 0) {
             throw new NullPointerException("data host port or target is null !!!");
         }
-        setAddress(host, port);
-        this.target = target;
+        setAddress(host, port, false);
         this.data = data;
-        setConnectTimeout(0);
-        setSender(new RequestSender(this));
-        setReceive(new RequestReceive(this, "onReceiveHttpData"));
+        setSender(new NioSender());
+        setReceive(new RemoteRequestReceive(localTarget));
+    }
+
+    public void setOnCloseListener(ICloseListener listener) {
+        this.listener = listener;
     }
 
     @Override
-    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
+    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) throws IOException {
         if (isConnect) {
             getSender().setChannel(channel);
             getSender().sendData(data);
@@ -35,8 +38,10 @@ public class ProxyHttpConnectClient extends NioClientTask {
         }
     }
 
-    @JavKeep
-    private void onReceiveHttpData(byte[] data) {
-        target.sendData(data);
+    @Override
+    protected void onCloseClientChannel() {
+        if (listener != null) {
+            listener.onClose(getHost());
+        }
     }
 }

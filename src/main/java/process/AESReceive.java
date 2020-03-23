@@ -1,11 +1,11 @@
 package process;
 
-import connect.network.nio.NioClientTask;
+import connect.network.base.joggle.INetReceive;
 
 public class AESReceive extends DecryptionReceive {
 
-    public AESReceive(NioClientTask task, String receiveMethodName) {
-        super(task, receiveMethodName);
+    public AESReceive(INetReceive receive) {
+        super(receive);
     }
 
     @Override
