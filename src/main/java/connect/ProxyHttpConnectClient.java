@@ -1,6 +1,5 @@
 package connect;
 
-import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
 
 import javax.net.ssl.SSLEngine;
@@ -10,10 +9,9 @@ import java.nio.channels.SocketChannel;
 /**
  * 代理转发客户http请求
  */
-public class ProxyHttpConnectClient extends NioClientTask {
+public class ProxyHttpConnectClient extends AbsConnectClient {
 
     private byte[] data;
-    private ICloseListener listener;
 
     public ProxyHttpConnectClient(String host, int port, NioSender localTarget, byte[] data) {
         if (localTarget == null || host == null || port <= 0) {
@@ -25,10 +23,6 @@ public class ProxyHttpConnectClient extends NioClientTask {
         setReceive(new RemoteRequestReceive(localTarget));
     }
 
-    public void setOnCloseListener(ICloseListener listener) {
-        this.listener = listener;
-    }
-
     @Override
     protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) throws IOException {
         if (isConnect) {
@@ -38,10 +32,4 @@ public class ProxyHttpConnectClient extends NioClientTask {
         }
     }
 
-    @Override
-    protected void onCloseClientChannel() {
-        if (listener != null) {
-            listener.onClose(getHost());
-        }
-    }
 }

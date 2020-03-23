@@ -38,10 +38,6 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
     }
 
 
-    public String getRequestHost() {
-        return requestHost;
-    }
-
     @Override
     protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) {
         if (isConnect) {
@@ -58,14 +54,12 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
 
     class ReceiveCallBack implements INetReceive<XResponse> {
 
-//        public XResponse response;
 
         @Override
         public void onReceive(XResponse response, Exception e) {
             if (e != null) {
                 return;
             }
-//            this.response = response;
             String newRequestHost = XResponseHelper.getHost(response);
             if (ProxyFilterManager.getInstance().isIntercept(newRequestHost) && StringEnvoy.isNotEmpty(newRequestHost)) {
 //                LogDog.e("拦截黑名单 host = " + requestHost);
@@ -92,83 +86,16 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
             String method = XResponseHelper.getRequestMethod(response);
             if ("CONNECT".equals(method)) {
 //                LogDog.d("Browser initiated request Host = " + requestHost + "  " + this);
-                createNewSSLConnect(requestHost, port, null);
+                createNewSSLConnect(requestHost, port);
             } else {
                 createNewConnect(response.getRawData(), requestHost, port);
             }
-//            String encode = response.getHeadForKey(XHttpProtocol.XY_CONTENT_ENCODING);
-//            if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
-//                //需要解压
-//                response.setHttpData(GZipUtils.unCompress(response.getHttpData()));
-//            }
 //            LogDog.d("Browser initiated request = " + new String(response.getRawData()) + this);
-        }
-
-        //        @Override
-        public void onReceive(byte[] data, Exception e) {
-            if (e != null) {
-                return;
-            }
-            String proxyData = new String(data);
-            if ("ping".equals(proxyData)) {
-                NioHPCClientFactory.getFactory().removeTask(HttpProxyClient.this);
-                return;
-            }
-
-            String[] array = proxyData.split("\r\n");
-            String firsLine = array[0];
-
-
-            if (Pattern.matches(".* .* HTTP.*", firsLine)) {
-
-                String host = null;
-                int port = 80;
-                for (int index = 1; index < array.length; index++) {
-                    if (array[index].startsWith("Host: ")) {
-                        String urlStr = array[index].split(" ")[1];
-                        String[] arrayUrl = urlStr.split(":");
-                        host = arrayUrl[0];
-                        if (arrayUrl.length > 1) {
-                            String portStr = arrayUrl[1];
-                            port = Integer.parseInt(portStr);
-                        }
-                        break;
-                    }
-                }
-
-                if (ProxyFilterManager.getInstance().isIntercept(host) || StringEnvoy.isEmpty(host)) {
-                    NioHPCClientFactory.getFactory().removeTask(HttpProxyClient.this);
-                    return;
-                }
-
-                LogDog.d("==> data = " + proxyData + " obj = " + HttpProxyClient.this.toString());
-
-                String[] requestLineCells = firsLine.split(" ");
-                String method = requestLineCells[0];
-//            String urlStr = requestLineCells[1];
-                String protocol = requestLineCells[2];
-
-                if ("CONNECT".equals(method)) {
-                    createNewSSLConnect(host, port, protocol);
-                } else {
-                    createNewConnect(data, host, port);
-                }
-                LogDog.d("==> Proxy Request host " + host + " [ add connect count = " + HttpProxyServer.localConnectCount.get() + " ] " + " obj = " + HttpProxyClient.this.toString());
-            }
-//            else {
-//                if (remoteSender != null) {
-//                    try {
-//                        remoteSender.sendData(data);
-//                    } catch (IOException ex) {
-//                        ex.printStackTrace();
-//                    }
-//                }
-//            }
         }
     }
 
-    private void createNewSSLConnect(String host, int port, String protocol) {
-        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, getSender(), protocol);
+    private void createNewSSLConnect(String host, int port) {
+        ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, getSender());
         LocalRequestReceive receive = getReceive();
         receive.setTLS(true);
         receive.setRemoteSender(sslNioClient.getSender());
