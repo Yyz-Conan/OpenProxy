@@ -18,7 +18,7 @@ public class ProxyHttpsConnectClient extends AbsConnectClient {
         }
         setAddress(host, port, false);
         this.localSender = localSender;
-        setReceive(new RemoteRequestReceive(localSender));
+        setReceive(new RemoteRequestReceiver(localSender));
         setSender(new NioSender());
     }
 

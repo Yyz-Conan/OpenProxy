@@ -20,7 +20,7 @@ public class ProxyHttpConnectClient extends AbsConnectClient {
         setAddress(host, port, false);
         this.data = data;
         setSender(new NioSender());
-        setReceive(new RemoteRequestReceive(localTarget));
+        setReceive(new RemoteRequestReceiver(localTarget));
     }
 
     @Override

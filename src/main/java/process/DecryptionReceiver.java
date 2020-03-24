@@ -1,12 +1,12 @@
 package process;
 
-import connect.network.base.joggle.INetReceive;
-import connect.network.nio.NioReceive;
+import connect.network.base.joggle.INetReceiver;
+import connect.network.nio.NioReceiver;
 
-public abstract class DecryptionReceive extends NioReceive<byte[]> {
+public abstract class DecryptionReceiver extends NioReceiver<byte[]> {
 
-    public DecryptionReceive(INetReceive receive) {
-        super(receive);
+    public DecryptionReceiver(INetReceiver receiver) {
+        super(receiver);
     }
 
     @Override

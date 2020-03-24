@@ -1,21 +1,21 @@
 package connect;
 
-import connect.network.base.joggle.INetReceive;
+import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
-import connect.network.xhttp.XHttpReceive;
+import connect.network.xhttp.XHttpReceiver;
 import util.IoEnvoy;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
-public class LocalRequestReceive extends XHttpReceive {
+public class LocalRequestReceiver extends XHttpReceiver {
 
     private INetSender remoteSender;
     private boolean isTLS = false;
     private boolean isFirst = true;
 
-    public LocalRequestReceive(INetReceive receive) {
-        super(receive);
+    public LocalRequestReceiver(INetReceiver receiver) {
+        super(receiver);
     }
 
     public void setRemoteSender(INetSender remoteSender) {

@@ -1,10 +1,8 @@
 package connect;
 
 import connect.network.base.joggle.INetSender;
-import connect.network.nio.NioReceive;
-import connect.network.nio.NioSender;
+import connect.network.nio.NioReceiver;
 import connect.network.xhttp.XHttpProtocol;
-import log.LogDog;
 import util.DirectBufferCleaner;
 import util.IoEnvoy;
 
@@ -14,11 +12,11 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class RemoteRequestReceive extends NioReceive<byte[]> {
+public class RemoteRequestReceiver extends NioReceiver<byte[]> {
 
     private INetSender localTarget;
 
-    public RemoteRequestReceive(NioSender localTarget) {
+    public RemoteRequestReceiver(INetSender localTarget) {
         super(null);
         if (localTarget == null) {
             throw new NullPointerException("localTarget is null !!!");

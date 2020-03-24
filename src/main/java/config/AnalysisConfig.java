@@ -14,38 +14,63 @@ import java.util.Map;
  */
 public class AnalysisConfig {
 
+    private Map<String, String> configMap = null;
+
+    private static AnalysisConfig config;
+
     private AnalysisConfig() {
     }
 
-    public static Map<String, String> analysis(String configFile) {
-        if (configFile == null) {
-            return null;
+    public static AnalysisConfig getInstance() {
+        if (config == null) {
+            config = new AnalysisConfig();
         }
-        Map<String, String> configMap = null;
+        return config;
+    }
+
+    public void analysis(String configFile) {
+        if (StringEnvoy.isEmpty(configFile)) {
+            return;
+        }
         File file = new File(configFile);
-        if (file != null && file.exists() && !(file.length() > 1024)) {
-            configMap = new HashMap<>();
-            BufferedReader reader = null;
-            try {
-                reader = new BufferedReader(new FileReader(file));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            if (reader != null) {
-                String line = null;
-                do {
-                    try {
-                        line = reader.readLine();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (StringEnvoy.isNotEmpty(line) && !line.startsWith("#") && line.contains("=")) {
-                        String[] args = line.split("=");
-                        configMap.put(args[0], args[1]);
-                    }
-                } while (StringEnvoy.isNotEmpty(line));
-            }
+        if (!file.exists() || file.length() > 1024) {
+            return;
         }
-        return configMap;
+        configMap = new HashMap<>();
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (reader != null) {
+            String line = null;
+            do {
+                try {
+                    line = reader.readLine();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                if (StringEnvoy.isNotEmpty(line) && !line.startsWith("#") && line.contains("=")) {
+                    String[] args = line.split("=");
+                    configMap.put(args[0], args[1]);
+                }
+            } while (StringEnvoy.isNotEmpty(line));
+        }
+    }
+
+    public String getValue(String key) {
+        if (configMap != null) {
+            return configMap.get(key);
+        }
+        return null;
+    }
+
+    public boolean getBooleanValue(String key) {
+        if (configMap != null) {
+            String value = configMap.get(key);
+            return Boolean.parseBoolean(value);
+        }
+        return false;
     }
 }

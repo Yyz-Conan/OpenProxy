@@ -1,6 +1,7 @@
 package connect;
 
-import connect.network.base.joggle.INetReceive;
+import config.AnalysisConfig;
+import connect.network.base.joggle.INetReceiver;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioSender;
@@ -8,14 +9,13 @@ import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.entity.XResponseHelper;
 import intercept.ProxyFilterManager;
 import log.LogDog;
-import process.AESReceive;
+import process.AESReceiver;
 import process.AESSender;
 import util.StringEnvoy;
 
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.regex.Pattern;
 
 /**
  * 接收处理客户请求
@@ -25,15 +25,16 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
     private String requestHost = null;
     private NioClientTask proxyClient;
 
-    public HttpProxyClient(SocketChannel channel, boolean isEnableRSA) {
-        super(channel);
+    public HttpProxyClient(SocketChannel channel) {
+        super(channel, null);
         ReceiveCallBack receiveCallBack = new ReceiveCallBack();
+        boolean isEnableRSA = AnalysisConfig.getInstance().getBooleanValue("enableRSA");
         if (isEnableRSA) {
-            setReceive(new AESReceive(receiveCallBack));
+            setReceive(new AESReceiver(receiveCallBack));
             setSender(new AESSender());
         } else {
             setSender(new NioSender());
-            setReceive(new LocalRequestReceive(receiveCallBack));
+            setReceive(new LocalRequestReceiver(receiveCallBack));
         }
     }
 
@@ -52,7 +53,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
         }
     }
 
-    class ReceiveCallBack implements INetReceive<XResponse> {
+    class ReceiveCallBack implements INetReceiver<XResponse> {
 
 
         @Override
@@ -85,18 +86,17 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
             int port = XResponseHelper.getPort(response);
             String method = XResponseHelper.getRequestMethod(response);
             if ("CONNECT".equals(method)) {
-//                LogDog.d("Browser initiated request Host = " + requestHost + "  " + this);
                 createNewSSLConnect(requestHost, port);
             } else {
                 createNewConnect(response.getRawData(), requestHost, port);
             }
-//            LogDog.d("Browser initiated request = " + new String(response.getRawData()) + this);
+            LogDog.d("Browser initiated request host = " + newRequestHost);
         }
     }
 
     private void createNewSSLConnect(String host, int port) {
         ProxyHttpsConnectClient sslNioClient = new ProxyHttpsConnectClient(host, port, getSender());
-        LocalRequestReceive receive = getReceive();
+        LocalRequestReceiver receive = getReceive();
         receive.setTLS(true);
         receive.setRemoteSender(sslNioClient.getSender());
         sslNioClient.setOnCloseListener(this);
@@ -106,7 +106,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
 
     private void createNewConnect(byte[] data, String host, int port) {
         ProxyHttpConnectClient connectClient = new ProxyHttpConnectClient(host, port, getSender(), data);
-        LocalRequestReceive receive = getReceive();
+        LocalRequestReceiver receive = getReceive();
         receive.setRemoteSender(connectClient.getSender());
         connectClient.setOnCloseListener(this);
         NioHPCClientFactory.getFactory().addTask(connectClient);
@@ -116,7 +116,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
     @Override
     protected void onCloseClientChannel() {
         NioHPCClientFactory.getFactory().removeTask(proxyClient);
-        LogDog.d("==> Connect close " + requestHost + " [ remover connect count = " + HttpProxyServer.localConnectCount.decrementAndGet() + " ] " + " obj = " + HttpProxyClient.this.toString());
+        LogDog.d("==> Connect close " + requestHost + " [ remover connect count = " + HttpProxyServer.localConnectCount.decrementAndGet() + " ] ");
     }
 
 

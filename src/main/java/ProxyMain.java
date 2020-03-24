@@ -15,7 +15,6 @@ import util.StringEnvoy;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Map;
 import java.util.Properties;
 
 public class ProxyMain {
@@ -86,18 +85,11 @@ public class ProxyMain {
 
     private static void startServer() {
         String configFile = initEnv(FILE_CONFIG);
-        String host = null;
-        String port = null;
-        boolean isEnableRSA = false;
-        Map<String, String> configMap = AnalysisConfig.analysis(configFile);
-        if (configMap != null) {
-            host = configMap.get("host");
-            port = configMap.get("port");
-            String enableRSA = configMap.get("enableRSA");
-            if (StringEnvoy.isNotEmpty(enableRSA)) {
-                isEnableRSA = Boolean.parseBoolean(enableRSA);
-            }
-        }
+        AnalysisConfig.getInstance().analysis(configFile);
+        String host = AnalysisConfig.getInstance().getValue("host");
+        String port = AnalysisConfig.getInstance().getValue("port");
+        boolean isEnableRSA = AnalysisConfig.getInstance().getBooleanValue("enableRSA");
+
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
             host = NetUtils.getLocalIp("eth0");
         }
@@ -108,8 +100,8 @@ public class ProxyMain {
             initRSA();
         }
         //开启代理服务
-        HttpProxyServer httpProxyServer = new HttpProxyServer(isEnableRSA);
-        httpProxyServer.setAddress(host, Integer.parseInt(port));
+        HttpProxyServer httpProxyServer = new HttpProxyServer();
+        httpProxyServer.setAddress(host, Integer.parseInt(port), false);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(httpProxyServer);
         LogDog.d("==> HttpProxy Server address = " + host + ":" + port);
@@ -126,7 +118,12 @@ public class ProxyMain {
         } else {
             targetPath = dirPath + "\\" + FILE_AT;
         }
-        WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);
-        TaskExecutorPoolManager.getInstance().runTask(watchConfigFileTask, null);
+        try {
+            WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);
+            TaskExecutorPoolManager.getInstance().runTask(watchConfigFileTask, null);
+        } catch (Exception e) {
+            LogDog.e("==> targetPath = " + targetPath + " " + e.getMessage());
+//            e.printStackTrace();
+        }
     }
 }
