@@ -1,7 +1,8 @@
-package process;
+package cryption;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.MessageDigest;
 import java.util.Base64;
 
 public class AESDataEnvoy {
@@ -10,7 +11,7 @@ public class AESDataEnvoy {
 
     private final String AES_ALGORITHM = "AES";
 
-    private final byte[] DEFAULT_KEY = "fD*HYc|/c;d309~{".getBytes();
+    private final byte[] DEFAULT_KEY = "fD*HYc|/c;d309~p".getBytes();
 
     private static AESDataEnvoy aesDataEnvoy;
 
@@ -47,14 +48,13 @@ public class AESDataEnvoy {
         }
         byte[] encrypted = null;
         try {
-//            MessageDigest md = MessageDigest.getInstance("SHA-256");
-//            byte[] newKey = md.digest(DEFAULT_KEY);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(key, AES_ALGORITHM);
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] newKey = md.digest(key);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(newKey, AES_ALGORITHM);
             //"算法/模式/补码方式"
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
             encrypted = cipher.doFinal(raw);
             encrypted = Base64.getEncoder().encode(encrypted);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -69,17 +69,14 @@ public class AESDataEnvoy {
         if (encrypt == null || key == null) {
             return null;
         }
-        encrypt = Base64.getDecoder().decode(encrypt);
-        if (encrypt == null) {
-            return null;
-        }
         byte[] original = null;
         try {
-//            MessageDigest md = MessageDigest.getInstance("SHA-256");
-//            byte[] newKey = md.digest(DEFAULT_KEY);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(key, AES_ALGORITHM);
+            original = Base64.getDecoder().decode(encrypt);
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] newKey = md.digest(key);
+            SecretKeySpec secretKeySpec = new SecretKeySpec(newKey, AES_ALGORITHM);
             cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-            original = cipher.doFinal(encrypt);
+            original = cipher.doFinal(original);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -53,7 +53,9 @@ public class AnalysisConfig {
                 }
                 if (StringEnvoy.isNotEmpty(line) && !line.startsWith("#") && line.contains("=")) {
                     String[] args = line.split("=");
-                    configMap.put(args[0], args[1]);
+                    if (args.length == 2) {
+                        configMap.put(args[0], args[1]);
+                    }
                 }
             } while (StringEnvoy.isNotEmpty(line));
         }
@@ -64,6 +66,18 @@ public class AnalysisConfig {
             return configMap.get(key);
         }
         return null;
+    }
+
+    public int getIntValue(String key) {
+        if (configMap != null) {
+            String value = configMap.get(key);
+            try {
+                return Integer.parseInt(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
     }
 
     public boolean getBooleanValue(String key) {

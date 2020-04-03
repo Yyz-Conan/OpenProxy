@@ -1,4 +1,4 @@
-package connect;
+package connect.joggle;
 
 public interface ICloseListener {
 

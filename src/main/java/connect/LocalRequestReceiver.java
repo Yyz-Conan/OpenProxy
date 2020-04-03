@@ -3,10 +3,8 @@ package connect;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
 import connect.network.xhttp.XHttpReceiver;
-import util.IoEnvoy;
-
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import connect.network.xhttp.entity.XReceiverMode;
+import connect.network.xhttp.entity.XReceiverStatus;
 
 public class LocalRequestReceiver extends XHttpReceiver {
 
@@ -16,41 +14,39 @@ public class LocalRequestReceiver extends XHttpReceiver {
 
     public LocalRequestReceiver(INetReceiver receiver) {
         super(receiver);
+        setMode(XReceiverMode.REQUEST);
     }
 
-    public void setRemoteSender(INetSender remoteSender) {
+    /**
+     * 工作于服务端模式，设置发送者接收tls数据
+     * @param remoteSender
+     */
+    public void setRequestSender(INetSender remoteSender) {
         this.remoteSender = remoteSender;
     }
 
-    public void setTLS(boolean TLS) {
-        isTLS = TLS;
+    public void setTLS() {
+        isTLS = true;
     }
 
     @Override
-    protected void onRead(SocketChannel channel) throws Exception {
-        Exception exception = null;
-        try {
+    protected void onStatusChange(XReceiverStatus status) {
+        if (status == XReceiverStatus.NONE) {
+            //当前是循环整个流程
+            reset();
+            isFirst = false;
+        }
+    }
+
+    @Override
+    protected void onRequest(byte[] data, int len, Exception e) throws Exception {
+        if (data != null) {
             if (isFirst || !isTLS) {
-                readHttpFullData(channel);
+                super.onRequest(data, len, e);
             } else {
-                readFullData(channel);
-            }
-        } catch (Exception var7) {
-//            var7.printStackTrace();
-            exception = var7;
-            throw var7;
-        } finally {
-            if (isFirst || !isTLS) {
-                notifyReceiver(response, exception);
-                response.reset();
-                isFirst = false;
+                remoteSender.sendData(data);
             }
         }
     }
 
-    private void readFullData(SocketChannel channel) throws IOException {
-        byte[] data = IoEnvoy.tryRead(channel);
-        remoteSender.sendData(data);
-//        LogDog.d("==> readTlsFullData sendData  = " + new String(data) + this);
-    }
 }

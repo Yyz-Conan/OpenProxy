@@ -1,11 +1,12 @@
 import config.AnalysisConfig;
-import connect.HttpProxyServer;
 import connect.network.nio.NioServerFactory;
+import connect.server.HttpProxyServer;
+import cryption.EncryptionType;
+import cryption.RSADataEnvoy;
 import intercept.BuiltInProxyFilter;
 import intercept.ProxyFilterManager;
 import intercept.WatchConfigFileTask;
 import log.LogDog;
-import process.RSADataEnvoy;
 import storage.FileHelper;
 import task.executor.TaskExecutorPoolManager;
 import util.IoEnvoy;
@@ -25,9 +26,10 @@ public class ProxyMain {
     private static final String FILE_CONFIG = "config.cfg";
     private static final String defaultPort = "7777";
 
-
     // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
+        String configFile = initEnv(FILE_CONFIG);
+        AnalysisConfig.getInstance().analysis(configFile);
         initProxyFilter();
         initWatch();
         startServer();
@@ -70,11 +72,15 @@ public class ProxyMain {
     }
 
     private static void initProxyFilter() {
-        String addressTableFile = initEnv(FILE_AT);
-        //初始化地址过滤器
-        BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
-        proxyFilter.init(addressTableFile);
-        ProxyFilterManager.getInstance().addFilter(proxyFilter);
+        boolean intercept = AnalysisConfig.getInstance().getBooleanValue("intercept");
+        if (intercept) {
+//        String interceptFile = AnalysisConfig.getInstance().getValue("interceptFile");
+            String interceptFile = initEnv(FILE_AT);
+            //初始化地址过滤器
+            BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
+            proxyFilter.init(interceptFile);
+            ProxyFilterManager.getInstance().addFilter(proxyFilter);
+        }
     }
 
     private static void initRSA() {
@@ -84,11 +90,9 @@ public class ProxyMain {
     }
 
     private static void startServer() {
-        String configFile = initEnv(FILE_CONFIG);
-        AnalysisConfig.getInstance().analysis(configFile);
-        String host = AnalysisConfig.getInstance().getValue("host");
-        String port = AnalysisConfig.getInstance().getValue("port");
-        boolean isEnableRSA = AnalysisConfig.getInstance().getBooleanValue("enableRSA");
+        String host = AnalysisConfig.getInstance().getValue("localHost");
+        String port = AnalysisConfig.getInstance().getValue("localPort");
+        String encryption = AnalysisConfig.getInstance().getValue("encryptionMode");
 
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
             host = NetUtils.getLocalIp("eth0");
@@ -96,9 +100,11 @@ public class ProxyMain {
         if (StringEnvoy.isEmpty(port)) {
             port = defaultPort;
         }
-        if (isEnableRSA) {
+
+        if (EncryptionType.RSA.name().equals(encryption)) {
             initRSA();
         }
+
         //开启代理服务
         HttpProxyServer httpProxyServer = new HttpProxyServer();
         httpProxyServer.setAddress(host, Integer.parseInt(port), false);
