@@ -1,6 +1,6 @@
 package intercept.joggle;
 
-public interface IProxyFilter {
+public interface IInterceptFilter {
 
     boolean isIntercept(String host);
 }

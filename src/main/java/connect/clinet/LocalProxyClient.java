@@ -9,7 +9,7 @@ import connect.network.nio.NioSender;
 import connect.network.xhttp.ByteCacheStream;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.entity.XResponseHelper;
-import intercept.ProxyFilterManager;
+import intercept.InterceptFilterManager;
 import log.LogDog;
 import util.StringEnvoy;
 
@@ -44,7 +44,7 @@ public class LocalProxyClient extends NioClientTask implements ICloseListener {
             }
             String newRequestHost = XResponseHelper.getHost(response);
             //黑名单过滤
-            if (ProxyFilterManager.getInstance().isIntercept(newRequestHost)) {
+            if (InterceptFilterManager.getInstance().isIntercept(newRequestHost)) {
                 NioHPCClientFactory.getFactory().removeTask(LocalProxyClient.this);
                 requestHost = newRequestHost;
                 return;

@@ -1,6 +1,6 @@
 package intercept;
 
-import intercept.joggle.IProxyFilter;
+import intercept.joggle.IInterceptFilter;
 import log.LogDog;
 import storage.FileHelper;
 import util.StringEnvoy;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class BuiltInProxyFilter implements IProxyFilter {
+public class BuiltInInterceptFilter implements IInterceptFilter {
     private List<String> blackList;
     private List<String> whiteList;
 
@@ -51,7 +51,7 @@ public class BuiltInProxyFilter implements IProxyFilter {
     private List<String> eight;
     private List<String> nine;
 
-    public BuiltInProxyFilter() {
+    public BuiltInInterceptFilter() {
         blackList = new ArrayList<>();
         whiteList = new ArrayList<>();
     }

@@ -1,10 +1,11 @@
 import config.AnalysisConfig;
+import config.ConfigKey;
 import connect.network.nio.NioServerFactory;
 import connect.server.HttpProxyServer;
 import cryption.EncryptionType;
 import cryption.RSADataEnvoy;
-import intercept.BuiltInProxyFilter;
-import intercept.ProxyFilterManager;
+import intercept.BuiltInInterceptFilter;
+import intercept.InterceptFilterManager;
 import intercept.WatchConfigFileTask;
 import log.LogDog;
 import storage.FileHelper;
@@ -20,17 +21,13 @@ import java.util.Properties;
 
 public class ProxyMain {
 
-    private static final String FILE_PUBLIC_KEY = "public.key";
-    private static final String FILE_PRIVATE_KEY = "private.key";
-    private static final String FILE_AT = "AddressTable.dat";
-    private static final String FILE_CONFIG = "config.cfg";
     private static final String defaultPort = "7777";
 
     // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
-        String configFile = initEnv(FILE_CONFIG);
+        String configFile = initEnv(ConfigKey.FILE_CONFIG);
         AnalysisConfig.getInstance().analysis(configFile);
-        initProxyFilter();
+        initInterceptFilter();
         initWatch();
         startServer();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> TaskExecutorPoolManager.getInstance().destroyAll()));
@@ -71,28 +68,28 @@ public class ProxyMain {
         return filePath;
     }
 
-    private static void initProxyFilter() {
-        boolean intercept = AnalysisConfig.getInstance().getBooleanValue("intercept");
+    private static void initInterceptFilter() {
+        boolean intercept = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.CONFIG_INTERCEPT);
         if (intercept) {
-//        String interceptFile = AnalysisConfig.getInstance().getValue("interceptFile");
-            String interceptFile = initEnv(FILE_AT);
+            String configInterceptFile = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
+            String interceptFile = initEnv(configInterceptFile);
             //初始化地址过滤器
-            BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
+            BuiltInInterceptFilter proxyFilter = new BuiltInInterceptFilter();
             proxyFilter.init(interceptFile);
-            ProxyFilterManager.getInstance().addFilter(proxyFilter);
+            InterceptFilterManager.getInstance().addFilter(proxyFilter);
         }
     }
 
     private static void initRSA() {
-        String publicKey = initEnv(FILE_PUBLIC_KEY);
-        String privateKey = initEnv(FILE_PRIVATE_KEY);
+        String publicKey = initEnv(ConfigKey.FILE_PUBLIC_KEY);
+        String privateKey = initEnv(ConfigKey.FILE_PRIVATE_KEY);
         RSADataEnvoy.getInstance().init(publicKey, privateKey);
     }
 
     private static void startServer() {
-        String host = AnalysisConfig.getInstance().getValue("localHost");
-        String port = AnalysisConfig.getInstance().getValue("localPort");
-        String encryption = AnalysisConfig.getInstance().getValue("encryptionMode");
+        String host = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_LOCAL_HOST);
+        String port = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_LOCAL_PORT);
+        String encryption = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_ENCRYPTION_MODE);
 
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
             host = NetUtils.getLocalIp("eth0");
@@ -120,9 +117,9 @@ public class ProxyMain {
         String targetPath;
         if ("ProxyMain".equals(value)) {
             //idea模式下
-            targetPath = dirPath + "\\out\\production\\resources\\" + FILE_AT;
+            targetPath = dirPath + "\\out\\production\\resources\\" + ConfigKey.FILE_INTERCEPT;
         } else {
-            targetPath = dirPath + "\\" + FILE_AT;
+            targetPath = dirPath + "\\" + ConfigKey.FILE_INTERCEPT;
         }
         try {
             WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);

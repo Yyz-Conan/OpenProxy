@@ -16,12 +16,14 @@ import connect.network.xhttp.entity.XResponseHelper;
 import cryption.*;
 import cryption.joggle.IDecryptListener;
 import cryption.joggle.IEncryptListener;
+import intercept.InterceptFilterManager;
 import intercept.ProxyFilterManager;
 import log.LogDog;
 import util.StringEnvoy;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -90,7 +92,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
             }
             String newRequestHost = XResponseHelper.getHost(response);
             //黑名单过滤
-            if (ProxyFilterManager.getInstance().isIntercept(newRequestHost) && StringEnvoy.isNotEmpty(newRequestHost)) {
+            if (InterceptFilterManager.getInstance().isIntercept(newRequestHost) && StringEnvoy.isNotEmpty(newRequestHost)) {
 //                LogDog.e("拦截黑名单 host = " + requestHost);
                 NioHPCClientFactory.getFactory().removeTask(HttpProxyClient.this);
                 requestHost = newRequestHost;
@@ -122,29 +124,29 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
             if (proxyClient == null) {
                 String method = XResponseHelper.getRequestMethod(response);
                 AbsClient client;
+                int port = XResponseHelper.getPort(response);
                 if (isServerMode) {
                     //当前是服务模式，请求指定的域名，需要响应 connect 请求
-                    int port = XResponseHelper.getPort(response);
                     client = new ProxyConnectClient(newRequestHost, port, getSender());
                 } else {
                     //当前是客户端模式
-                    boolean isReachable = false;
-                    try {
+                    boolean isNeedProxy = ProxyFilterManager.getInstance().isNeedProxy(newRequestHost);
+                    if (!isNeedProxy) {
                         //本地网络测试要访问的域名是否可以联通
-                        isReachable = InetAddress.getByName(newRequestHost).isReachable(500);
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    } finally {
-                        if (isReachable) {
-                            //如果本地网络可以联通则不走代理，需要响应 connect 请求
-                            int port = XResponseHelper.getPort(response);
-                            client = new ProxyConnectClient(newRequestHost, port, getSender());
-                        } else {
-                            //当本地网络环境访问不成功则走代理服务访问
-                            RemoteProxyClient remoteProxyClient = new RemoteProxyClient(getSender(), remoteHost, remotePort);
-                            remoteProxyClient.setRealHost(newRequestHost);
-                            client = remoteProxyClient;
+                        isNeedProxy = !isNodeReachable(newRequestHost, port);
+                        //添加需要代理访问的域名
+                        if (isNeedProxy) {
+                            ProxyFilterManager.getInstance().addProxyHost(newRequestHost);
                         }
+                    }
+                    if (isNeedProxy) {
+                        //当本地网络环境访问不成功则走代理服务访问
+                        RemoteProxyClient remoteProxyClient = new RemoteProxyClient(getSender(), remoteHost, remotePort);
+                        remoteProxyClient.setRealHost(newRequestHost);
+                        client = remoteProxyClient;
+                    } else {
+                        //如果本地网络可以联通则不走代理，需要响应 connect 请求
+                        client = new ProxyConnectClient(newRequestHost, port, getSender());
                     }
                 }
 
@@ -174,6 +176,27 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
     protected void onCloseClientChannel() {
         NioHPCClientFactory.getFactory().removeTask(proxyClient);
         LogDog.d("==> close " + requestHost + " [ remover connect count = " + HttpProxyServer.localConnectCount.decrementAndGet() + " ] ");
+    }
+
+    private boolean isNodeReachable(String hostname, int port) {
+        Socket socket = null;
+        try {
+            socket = new Socket();
+            socket.setSoTimeout(500);
+            socket.connect(new InetSocketAddress(hostname, port), 500);
+            return socket.isConnected();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
     }
 
 }

@@ -52,12 +52,12 @@ public class WatchConfigFileTask extends BaseLoopTask {
                 if (path.toString().equals(targetFile)) {
                     LogDog.d(targetFile + "配置文件发生修改 !!! ");
                     //清除所有的过滤器
-                    ProxyFilterManager.getInstance().clear();
+                    InterceptFilterManager.getInstance().clear();
                     //创建新的过滤器
-                    BuiltInProxyFilter proxyFilter = new BuiltInProxyFilter();
+                    BuiltInInterceptFilter proxyFilter = new BuiltInInterceptFilter();
                     proxyFilter.init(targetPath + File.separator + targetFile);
                     //添加新的过滤器
-                    ProxyFilterManager.getInstance().addFilter(proxyFilter);
+                    InterceptFilterManager.getInstance().addFilter(proxyFilter);
                 }
                 key.reset();
             }
