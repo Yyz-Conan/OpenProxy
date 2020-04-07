@@ -115,11 +115,12 @@ public class ProxyMain {
         String value = properties.getProperty("sun.java.command");
         String dirPath = properties.getProperty("user.dir");
         String targetPath;
+        String configInterceptFile = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
         if ("ProxyMain".equals(value)) {
             //idea模式下
-            targetPath = dirPath + "\\out\\production\\resources\\" + ConfigKey.FILE_INTERCEPT;
+            targetPath = dirPath + "\\out\\production\\resources\\" + configInterceptFile;
         } else {
-            targetPath = dirPath + "\\" + ConfigKey.FILE_INTERCEPT;
+            targetPath = dirPath + "\\" + configInterceptFile;
         }
         try {
             WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);

@@ -1,8 +1,8 @@
 package connect.clinet;
 
-import connect.network.nio.NioHPCClientFactory;
+import connect.HttpProxyClient;
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerTask;
-import connect.server.HttpProxyClient;
 import log.LogDog;
 import util.StringEnvoy;
 
@@ -30,20 +30,20 @@ public class LocalProxyServer extends NioServerTask {
     protected void onBootServerComplete(ServerSocketChannel channel) {
         LogDog.d("==> HttpProxy Server address = " + getServerHost() + ":" + getServerPort());
         LogDog.d("==> Remote Server address = " + remoteHost + ":" + remotePort);
-        NioHPCClientFactory.getFactory(1).open();
+        NioClientFactory.getFactory().open();
     }
 
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
         HttpProxyClient localProxyClient = new HttpProxyClient(channel);
         localProxyClient.setRemoteServer(remoteHost, remotePort);
-        NioHPCClientFactory.getFactory().addTask(localProxyClient);
+        NioClientFactory.getFactory().addTask(localProxyClient);
         localConnectCount.incrementAndGet();
     }
 
     @Override
     protected void onCloseServerChannel() {
         LogDog.e("==> Local Proxy Server close ing... !!! ");
-        NioHPCClientFactory.destroy();
+        NioClientFactory.destroy();
     }
 }

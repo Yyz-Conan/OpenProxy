@@ -6,7 +6,7 @@ import connect.AbsClient;
 import connect.DecryptionReceiver;
 import connect.EncryptionSender;
 import connect.network.base.joggle.INetSender;
-import connect.network.nio.NioHPCClientFactory;
+import connect.network.nio.NioClientFactory;
 import cryption.*;
 import cryption.joggle.IDecryptListener;
 import cryption.joggle.IEncryptListener;
@@ -72,7 +72,7 @@ public class RemoteProxyClient extends AbsClient {
             }
         } catch (Exception e) {
             LogDog.e("==> host = " + getHost() + " port = " + getPort());
-            NioHPCClientFactory.getFactory().removeTask(this);
+            NioClientFactory.getFactory().removeTask(this);
             e.printStackTrace();
         }
     }

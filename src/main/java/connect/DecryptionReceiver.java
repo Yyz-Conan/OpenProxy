@@ -55,9 +55,12 @@ public class DecryptionReceiver extends LocalRequestReceiver {
         if (data != null) {
             byte[][] decrypt = null;
             if (listener != null) {
+                //缓存数据
                 cacheStream.write(data);
+                //解包
                 byte[][] unpack = DataPacketManger.unpack(cacheStream.getBuf(), cacheStream.size());
                 if (unpack == null) {
+                    //如果解包失败说明数据包还没接收完整
                     return;
                 }
                 decrypt = listener.onDecrypt(unpack);

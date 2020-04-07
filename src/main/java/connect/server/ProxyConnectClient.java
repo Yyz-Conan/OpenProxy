@@ -2,7 +2,7 @@ package connect.server;
 
 import connect.AbsClient;
 import connect.RemoteProxyReceiver;
-import connect.network.nio.NioHPCClientFactory;
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioSender;
 import log.LogDog;
 
@@ -37,7 +37,7 @@ public class ProxyConnectClient extends AbsClient {
             }
         } catch (Exception e) {
             LogDog.e("==> host = " + getHost() + " port = " + getPort());
-            NioHPCClientFactory.getFactory().removeTask(this);
+            NioClientFactory.getFactory().removeTask(this);
             e.printStackTrace();
         }
         data = null;

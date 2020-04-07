@@ -1,18 +1,17 @@
-package connect.server;
+package connect;
 
 import config.AnalysisConfig;
-import connect.AbsClient;
-import connect.DecryptionReceiver;
-import connect.EncryptionSender;
-import connect.LocalRequestReceiver;
+import connect.clinet.LocalProxyServer;
 import connect.clinet.RemoteProxyClient;
 import connect.joggle.ICloseListener;
 import connect.network.base.joggle.INetReceiver;
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
-import connect.network.nio.NioHPCClientFactory;
 import connect.network.xhttp.ByteCacheStream;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.entity.XResponseHelper;
+import connect.server.HttpProxyServer;
+import connect.server.ProxyConnectClient;
 import cryption.*;
 import cryption.joggle.IDecryptListener;
 import cryption.joggle.IEncryptListener;
@@ -78,7 +77,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
     @Override
     public void onClose(String host) {
         if (StringEnvoy.isNotEmpty(host) && host.equals(requestHost)) {
-            NioHPCClientFactory.getFactory().removeTask(HttpProxyClient.this);
+            NioClientFactory.getFactory().removeTask(HttpProxyClient.this);
         }
     }
 
@@ -94,7 +93,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
             //黑名单过滤
             if (InterceptFilterManager.getInstance().isIntercept(newRequestHost) && StringEnvoy.isNotEmpty(newRequestHost)) {
 //                LogDog.e("拦截黑名单 host = " + requestHost);
-                NioHPCClientFactory.getFactory().removeTask(HttpProxyClient.this);
+                NioClientFactory.getFactory().removeTask(HttpProxyClient.this);
                 requestHost = newRequestHost;
                 return;
             }
@@ -105,7 +104,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
 
             if (StringEnvoy.isNotEmpty(requestHost) && !newRequestHost.equals(requestHost) && isServerMode) {
                 //发现当前请求的网站跟上次请求的网站不一样，则关闭之前的链接（只限制运行于服务模式）
-                NioHPCClientFactory.getFactory().removeTask(proxyClient);
+                NioClientFactory.getFactory().removeTask(proxyClient);
                 proxyClient = null;
             }
 
@@ -116,7 +115,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
                     proxyClient.getSender().sendData(raw.toByteArray());
                 } catch (IOException ex) {
                     //如果复用链路有异常则关闭
-                    NioHPCClientFactory.getFactory().removeTask(proxyClient);
+                    NioClientFactory.getFactory().removeTask(proxyClient);
                     ex.printStackTrace();
                     proxyClient = null;
                 }
@@ -165,7 +164,7 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
                 }
                 receive.setRequestSender(client.getSender());
                 client.setOnCloseListener(HttpProxyClient.this);
-                NioHPCClientFactory.getFactory().addTask(client);
+                NioClientFactory.getFactory().addTask(client);
                 proxyClient = client;
                 requestHost = newRequestHost;
             }
@@ -174,8 +173,13 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
 
     @Override
     protected void onCloseClientChannel() {
-        NioHPCClientFactory.getFactory().removeTask(proxyClient);
-        LogDog.d("==> close " + requestHost + " [ remover connect count = " + HttpProxyServer.localConnectCount.decrementAndGet() + " ] ");
+        NioClientFactory.getFactory().removeTask(proxyClient);
+    }
+
+    @Override
+    protected void onRecovery() {
+        int count = isServerMode ? HttpProxyServer.localConnectCount.decrementAndGet() : LocalProxyServer.localConnectCount.decrementAndGet();
+        LogDog.d("==> close " + requestHost + " [ remover connect count = " + count + " ] ");
     }
 
     private boolean isNodeReachable(String hostname, int port) {

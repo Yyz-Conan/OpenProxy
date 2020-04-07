@@ -1,6 +1,7 @@
 package connect.server;
 
-import connect.network.nio.NioHPCClientFactory;
+import connect.HttpProxyClient;
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerTask;
 import log.LogDog;
 
@@ -15,13 +16,13 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onBootServerComplete(ServerSocketChannel channel) {
         LogDog.d("==> Proxy Server Start Success !!! ");
-        NioHPCClientFactory.getFactory(1).open();
+        NioClientFactory.getFactory().open();
     }
 
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
         HttpProxyClient client = new HttpProxyClient(channel);
-        NioHPCClientFactory.getFactory().addTask(client);
+        NioClientFactory.getFactory().addTask(client);
         localConnectCount.incrementAndGet();
 //        LogDog.d("---------- add() Connect Count = " + HttpProxyServer.localConnectCount.incrementAndGet() + " obj = " + client.toString());
     }
@@ -29,6 +30,6 @@ public class HttpProxyServer extends NioServerTask {
     @Override
     protected void onCloseServerChannel() {
         LogDog.e("==> Proxy Server close ing... !!! ");
-        NioHPCClientFactory.destroy();
+        NioClientFactory.destroy();
     }
 }
