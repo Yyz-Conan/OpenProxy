@@ -5,6 +5,7 @@ import connect.server.HttpProxyServer;
 import cryption.EncryptionType;
 import cryption.RSADataEnvoy;
 import intercept.BuiltInInterceptFilter;
+import intercept.InterceptFileChangeListener;
 import intercept.InterceptFilterManager;
 import intercept.WatchConfigFileTask;
 import log.LogDog;
@@ -114,20 +115,15 @@ public class ProxyMain {
         Properties properties = System.getProperties();
         String value = properties.getProperty("sun.java.command");
         String dirPath = properties.getProperty("user.dir");
-        String targetPath;
         String configInterceptFile = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
+        String targetFile;
         if ("ProxyMain".equals(value)) {
             //idea模式下
-            targetPath = dirPath + "\\out\\production\\resources\\" + configInterceptFile;
+            targetFile = dirPath + "\\out\\production\\resources\\" + configInterceptFile;
         } else {
-            targetPath = dirPath + "\\" + configInterceptFile;
+            targetFile = dirPath + "\\" + configInterceptFile;
         }
-        try {
-            WatchConfigFileTask watchConfigFileTask = new WatchConfigFileTask(targetPath);
-            TaskExecutorPoolManager.getInstance().runTask(watchConfigFileTask, null);
-        } catch (Exception e) {
-            LogDog.e("==> targetPath = " + targetPath + " " + e.getMessage());
-//            e.printStackTrace();
-        }
+        InterceptFileChangeListener changeListener = new InterceptFileChangeListener(targetFile);
+        WatchConfigFileTask.getInstance().addWatchFile(changeListener);
     }
 }

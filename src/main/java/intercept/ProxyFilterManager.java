@@ -23,7 +23,11 @@ public class ProxyFilterManager {
 
     public static ProxyFilterManager getInstance() {
         if (proxyFilterManager == null) {
-            proxyFilterManager = new ProxyFilterManager();
+            synchronized (ProxyFilterManager.class) {
+                if (proxyFilterManager == null) {
+                    proxyFilterManager = new ProxyFilterManager();
+                }
+            }
         }
         return proxyFilterManager;
     }
@@ -49,7 +53,7 @@ public class ProxyFilterManager {
         } else {
             array = content.split("\n");
         }
-
+        proxyList.clear();
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {
                 proxyList.add(item.replace("\r", ""));
