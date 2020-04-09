@@ -2,22 +2,26 @@ package intercept;
 
 import intercept.joggle.IWatchFileChangeListener;
 
-public class ProxyFileChangeListener implements IWatchFileChangeListener {
-    private String targetFile;
+import java.io.File;
 
-    public ProxyFileChangeListener(String targetFile) {
-        this.targetFile = targetFile;
+public class ProxyFileChangeListener implements IWatchFileChangeListener {
+    private String filePath;
+    private String fileName;
+
+    public ProxyFileChangeListener(String filePath, String fileName) {
+        this.filePath = filePath;
+        this.fileName = fileName;
     }
 
     @Override
     public String getTargetFile() {
-        return targetFile;
+        return filePath + File.separator + fileName;
     }
 
     @Override
-    public void onTargetChange(String file) {
-        if (file.equals(targetFile)) {
-            ProxyFilterManager.getInstance().loadProxyTable(file);
+    public void onTargetChange(String targetFileName) {
+        if (targetFileName.equals(fileName)) {
+            ProxyFilterManager.getInstance().loadProxyTable(getTargetFile());
         }
     }
 }

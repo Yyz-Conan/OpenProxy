@@ -2,31 +2,36 @@ package connect;
 
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
-import connect.network.xhttp.ByteCacheStream;
 import connect.network.xhttp.entity.XReceiverMode;
 import connect.network.xhttp.entity.XResponse;
-import cryption.DataPacketManger;
+import cryption.DecryptionStatus;
 import cryption.joggle.IDecryptListener;
+import util.DirectBufferCleaner;
+import util.IoEnvoy;
+import util.TypeConversion;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 /**
  * 解密接收者
  */
 public class DecryptionReceiver extends LocalRequestReceiver {
 
-    private ByteCacheStream cacheStream;
     private IDecryptListener listener;
     private INetSender localTarget;
+    private ByteBuffer tag;
+    private ByteBuffer packetData;
+    private DecryptionStatus decryptionStatus;
 
     public DecryptionReceiver(IDecryptListener listener) {
         super(null);
         if (listener != null) {
             this.listener = listener;
-            cacheStream = new ByteCacheStream();
+            tag = ByteBuffer.allocate(4);
+            decryptionStatus = DecryptionStatus.TAG;
         }
-    }
-
-    public INetSender getLocalTarget() {
-        return localTarget;
     }
 
     /**
@@ -51,33 +56,49 @@ public class DecryptionReceiver extends LocalRequestReceiver {
     }
 
     @Override
-    protected void onInterceptReceive(byte[] data, Exception e) throws Exception {
-        if (data != null) {
-            byte[][] decrypt = null;
-            if (listener != null) {
-                //缓存数据
-                cacheStream.write(data);
-                //解包
-                byte[][] unpack = DataPacketManger.unpack(cacheStream.getBuf(), cacheStream.size());
-                if (unpack == null) {
-                    //如果解包失败说明数据包还没接收完整
-                    return;
-                }
-                decrypt = listener.onDecrypt(unpack);
-            }
-            if (decrypt == null) {
-                decrypt = new byte[][]{data};
-            }
-            for (byte[] tmp : decrypt) {
-                if (getMode() == XReceiverMode.REQUEST) {
-                    super.onHttpReceive(tmp, tmp.length, e);
-                } else {
-                    localTarget.sendData(tmp);
+    protected void onRead(SocketChannel channel) throws Exception {
+        if (listener != null) {
+            if (decryptionStatus == DecryptionStatus.TAG) {
+                tag.clear();
+                int ret = IoEnvoy.readToFull(channel, tag);
+                if (ret == IoEnvoy.SUCCESS) {
+                    int packetSize = TypeConversion.byteToInt(tag.array(), 0);
+                    if (packetSize > 0) {
+                        packetData = ByteBuffer.allocate(packetSize);
+                        decryptionStatus = DecryptionStatus.DATA;
+                    }
+                } else if (ret == IoEnvoy.FAIL) {
+                    throw new IOException("SocketChannel close !!!");
                 }
             }
-            if (listener != null) {
-                cacheStream.reset();
+            if (decryptionStatus == DecryptionStatus.DATA) {
+                int ret = IoEnvoy.readToFull(channel, packetData);
+                if (ret == IoEnvoy.SUCCESS) {
+                    byte[] decrypt = listener.onDecrypt(packetData.array());
+                    if (getMode() == XReceiverMode.REQUEST) {
+                        super.onHttpReceive(decrypt, decrypt.length, null);
+                    } else {
+                        localTarget.sendData(decrypt);
+                    }
+                    DirectBufferCleaner.clean(packetData);
+                    packetData = null;
+                    decryptionStatus = DecryptionStatus.END;
+                } else if (ret == IoEnvoy.FAIL) {
+                    throw new IOException("SocketChannel close !!!");
+                }
             }
+            if (decryptionStatus == DecryptionStatus.END) {
+                tag.clear();
+                int ret = IoEnvoy.readToFull(channel, tag);
+                if (ret == IoEnvoy.SUCCESS) {
+                    decryptionStatus = DecryptionStatus.TAG;
+                } else if (ret == IoEnvoy.FAIL) {
+                    throw new IOException("SocketChannel close !!!");
+                }
+            }
+        } else {
+            super.onRead(channel);
         }
     }
+
 }

@@ -6,6 +6,7 @@ import task.executor.BaseLoopTask;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.ITaskContainer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
@@ -65,12 +66,13 @@ public class WatchConfigFileTask extends BaseLoopTask {
     }
 
     private void addListener(String targetPath) {
-        Path path = Paths.get(targetPath);
         try {
+            File file = new File(targetPath);
+            Path path = Paths.get(file.getParent());
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
             LogDog.d("==> monitor " + targetPath + " profile successfully !!!");
-        } catch (IOException e) {
-            LogDog.d("==> monitor " + targetPath + " profile failed  !!!" + e.getMessage());
+        } catch (Exception e) {
+            LogDog.e("==> monitor " + targetPath + " profile failed  !!!" + e.getMessage());
         }
     }
 
@@ -83,10 +85,12 @@ public class WatchConfigFileTask extends BaseLoopTask {
         }
         if (key != null && key.isValid()) {
             for (WatchEvent<?> event : key.pollEvents()) {
-                //文件内容发送改变
-                Path path = (Path) event.context();
-                for (IWatchFileChangeListener listener : listenerList) {
-                    listener.onTargetChange(path.toString());
+                if (event.count() == 1) {
+                    //文件内容发送改变
+                    Path path = (Path) event.context();
+                    for (IWatchFileChangeListener listener : listenerList) {
+                        listener.onTargetChange(path.toString());
+                    }
                 }
                 key.reset();
             }

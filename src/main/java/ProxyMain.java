@@ -1,5 +1,6 @@
 import config.AnalysisConfig;
 import config.ConfigKey;
+import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerFactory;
 import connect.server.HttpProxyServer;
 import cryption.EncryptionType;
@@ -31,7 +32,12 @@ public class ProxyMain {
         initInterceptFilter();
         initWatch();
         startServer();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> TaskExecutorPoolManager.getInstance().destroyAll()));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            NioClientFactory.destroy();
+            NioServerFactory.destroy();
+            WatchConfigFileTask.getInstance().destroy();
+            TaskExecutorPoolManager.getInstance().destroyAll();
+        }));
     }
 
     private static String initEnv(String configFile) {
@@ -115,15 +121,12 @@ public class ProxyMain {
         Properties properties = System.getProperties();
         String value = properties.getProperty("sun.java.command");
         String dirPath = properties.getProperty("user.dir");
-        String configInterceptFile = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
-        String targetFile;
+        String fileName = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
         if ("ProxyMain".equals(value)) {
             //idea模式下
-            targetFile = dirPath + "\\out\\production\\resources\\" + configInterceptFile;
-        } else {
-            targetFile = dirPath + "\\" + configInterceptFile;
+            dirPath = dirPath + "\\out\\production\\resources";
         }
-        InterceptFileChangeListener changeListener = new InterceptFileChangeListener(targetFile);
+        InterceptFileChangeListener changeListener = new InterceptFileChangeListener(dirPath, fileName);
         WatchConfigFileTask.getInstance().addWatchFile(changeListener);
     }
 }

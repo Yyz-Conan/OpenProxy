@@ -4,5 +4,5 @@ public interface IWatchFileChangeListener {
 
     String getTargetFile();
 
-    void onTargetChange(String file);
+    void onTargetChange(String targetFileName);
 }

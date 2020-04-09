@@ -6,5 +6,5 @@ public interface IDecryptListener {
      * @param unpack
      * @return
      */
-    byte[][] onDecrypt(byte[][] unpack);
+    byte[] onDecrypt(byte[] unpack);
 }
