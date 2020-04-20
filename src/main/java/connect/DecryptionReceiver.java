@@ -5,8 +5,7 @@ import connect.network.base.joggle.INetSender;
 import connect.network.xhttp.entity.XReceiverMode;
 import connect.network.xhttp.entity.XResponse;
 import cryption.DecryptionStatus;
-import cryption.joggle.IDecryptListener;
-import util.DirectBufferCleaner;
+import cryption.joggle.IDecryptTransform;
 import util.IoEnvoy;
 import util.TypeConversion;
 
@@ -19,16 +18,16 @@ import java.nio.channels.SocketChannel;
  */
 public class DecryptionReceiver extends LocalRequestReceiver {
 
-    private IDecryptListener listener;
+    private IDecryptTransform decryptTransform;
     private INetSender localTarget;
     private ByteBuffer tag;
     private ByteBuffer packetData;
     private DecryptionStatus decryptionStatus;
 
-    public DecryptionReceiver(IDecryptListener listener) {
+    public DecryptionReceiver(IDecryptTransform decryptTransform) {
         super(null);
-        if (listener != null) {
-            this.listener = listener;
+        if (decryptTransform != null) {
+            this.decryptTransform = decryptTransform;
             tag = ByteBuffer.allocate(4);
             decryptionStatus = DecryptionStatus.TAG;
         }
@@ -57,7 +56,7 @@ public class DecryptionReceiver extends LocalRequestReceiver {
 
     @Override
     protected void onRead(SocketChannel channel) throws Exception {
-        if (listener != null) {
+        if (decryptTransform != null) {
             if (decryptionStatus == DecryptionStatus.TAG) {
                 tag.clear();
                 int ret = IoEnvoy.readToFull(channel, tag);
@@ -74,13 +73,12 @@ public class DecryptionReceiver extends LocalRequestReceiver {
             if (decryptionStatus == DecryptionStatus.DATA) {
                 int ret = IoEnvoy.readToFull(channel, packetData);
                 if (ret == IoEnvoy.SUCCESS) {
-                    byte[] decrypt = listener.onDecrypt(packetData.array());
+                    byte[] decrypt = decryptTransform.onDecrypt(packetData.array());
                     if (getMode() == XReceiverMode.REQUEST) {
                         super.onHttpReceive(decrypt, decrypt.length, null);
                     } else {
                         localTarget.sendData(decrypt);
                     }
-                    DirectBufferCleaner.clean(packetData);
                     packetData = null;
                     decryptionStatus = DecryptionStatus.END;
                 } else if (ret == IoEnvoy.FAIL) {

@@ -1,6 +1,6 @@
 package cryption.joggle;
 
-public interface IDecryptListener {
+public interface IDecryptTransform {
     /**
      * 解密
      * @param unpack

@@ -1,10 +1,10 @@
 package cryption;
 
-import cryption.joggle.IDecryptListener;
+import cryption.joggle.IDecryptTransform;
 
 import java.util.Base64;
 
-public class Base64Decrypt implements IDecryptListener {
+public class Base64Decrypt implements IDecryptTransform {
 
     @Override
     public byte[] onDecrypt(byte[] unpack) {

@@ -10,7 +10,7 @@ public class LocalRequestReceiver extends XHttpReceiver {
 
     private INetSender remoteSender;
     private boolean isTLS = false;
-    private boolean isFirst = true;
+    private boolean isFirstRequest = true;
 
     public LocalRequestReceiver(INetReceiver receiver) {
         super(receiver);
@@ -33,15 +33,15 @@ public class LocalRequestReceiver extends XHttpReceiver {
     protected void onStatusChange(XReceiverStatus status) {
         if (status == XReceiverStatus.NONE) {
             //当前是循环整个流程
-            reset();
-            isFirst = false;
+//            reset();
+            isFirstRequest = false;
         }
     }
 
     @Override
     protected void onRequest(byte[] data, int len, Exception e) throws Exception {
         if (data != null) {
-            if (isFirst || !isTLS) {
+            if (isFirstRequest || !isTLS) {
                 super.onRequest(data, len, e);
             } else {
                 remoteSender.sendData(data);

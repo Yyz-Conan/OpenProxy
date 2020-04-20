@@ -1,6 +1,7 @@
 package connect;
 
 import connect.network.nio.NioSender;
+import connect.network.nio.buf.MultilevelBuf;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -28,6 +29,19 @@ public class CacheNioSender extends NioSender {
                 }
             }
             list.clear();
+        }
+    }
+
+    @Override
+    public void sendData(MultilevelBuf buf) throws IOException {
+        synchronized (list) {
+            if (channel == null) {
+                buf.flip();
+                byte[] data = buf.array();
+                list.add(data);
+            } else {
+                super.sendData(buf);
+            }
         }
     }
 

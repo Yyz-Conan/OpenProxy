@@ -42,6 +42,11 @@ public class WatchConfigFileTask extends BaseLoopTask {
     }
 
     public void destroy() {
+        if (container != null) {
+            TaskExecutorPoolManager.getInstance().destroy(container);
+            watchConfigFileTask = null;
+            container = null;
+        }
         if (watchService != null) {
             try {
                 watchService.close();
@@ -49,11 +54,6 @@ public class WatchConfigFileTask extends BaseLoopTask {
                 e.printStackTrace();
             }
             watchService = null;
-        }
-        if (container != null) {
-            TaskExecutorPoolManager.getInstance().destroy(container);
-            watchConfigFileTask = null;
-            container = null;
         }
     }
 

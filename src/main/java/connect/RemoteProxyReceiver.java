@@ -2,12 +2,14 @@ package connect;
 
 import connect.network.base.joggle.INetSender;
 import connect.network.nio.NioReceiver;
+import connect.network.nio.NioSender;
+import connect.network.nio.buf.MultilevelBuf;
 
 public class RemoteProxyReceiver extends NioReceiver<byte[]> {
 
-    protected INetSender localTarget;
+    protected NioSender localTarget;
 
-    public RemoteProxyReceiver(INetSender localTarget) {
+    public RemoteProxyReceiver(NioSender localTarget) {
         super(null);
         if (localTarget == null) {
             throw new NullPointerException("localTarget is null !!!");
@@ -20,8 +22,8 @@ public class RemoteProxyReceiver extends NioReceiver<byte[]> {
     }
 
     @Override
-    protected void onInterceptReceive(byte[] data, Exception e) throws Exception {
-        localTarget.sendData(data);
+    protected void onInterceptReceive(MultilevelBuf buf, Exception e) throws Exception {
+        localTarget.sendData(buf);
     }
 
 }

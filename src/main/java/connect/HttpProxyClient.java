@@ -13,8 +13,8 @@ import connect.network.xhttp.entity.XResponseHelper;
 import connect.server.HttpProxyServer;
 import connect.server.ProxyConnectClient;
 import cryption.*;
-import cryption.joggle.IDecryptListener;
-import cryption.joggle.IEncryptListener;
+import cryption.joggle.IDecryptTransform;
+import cryption.joggle.IEncryptTransform;
 import intercept.InterceptFilterManager;
 import intercept.ProxyFilterManager;
 import log.LogDog;
@@ -41,8 +41,8 @@ public class HttpProxyClient extends NioClientTask implements ICloseListener {
         ReceiveCallBack receiveCallBack = new ReceiveCallBack();
         isServerMode = AnalysisConfig.getInstance().getBooleanValue("isServerMode");
 
-        IDecryptListener decryptListener = null;
-        IEncryptListener encryptListener = null;
+        IDecryptTransform decryptListener = null;
+        IEncryptTransform encryptListener = null;
 
         if (isServerMode) {
             //如果是运行在服务模式则开启数据加密

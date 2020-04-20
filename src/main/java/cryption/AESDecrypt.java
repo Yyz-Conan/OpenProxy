@@ -1,9 +1,9 @@
 package cryption;
 
 
-import cryption.joggle.IDecryptListener;
+import cryption.joggle.IDecryptTransform;
 
-public class AESDecrypt implements IDecryptListener {
+public class AESDecrypt implements IDecryptTransform {
 
     @Override
     public byte[] onDecrypt(byte[] unpack) {

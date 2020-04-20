@@ -1,6 +1,6 @@
 package cryption.joggle;
 
-public interface IEncryptListener {
+public interface IEncryptTransform {
 
     byte[] onEncrypt(byte[] src);
 }

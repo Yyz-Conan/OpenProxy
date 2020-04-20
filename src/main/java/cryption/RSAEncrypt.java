@@ -1,8 +1,8 @@
 package cryption;
 
-import cryption.joggle.IEncryptListener;
+import cryption.joggle.IEncryptTransform;
 
-public class RSAEncrypt implements IEncryptListener {
+public class RSAEncrypt implements IEncryptTransform {
 
     @Override
     public byte[] onEncrypt(byte[] src) {

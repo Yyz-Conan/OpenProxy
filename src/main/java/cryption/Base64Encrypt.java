@@ -1,10 +1,10 @@
 package cryption;
 
-import cryption.joggle.IEncryptListener;
+import cryption.joggle.IEncryptTransform;
 
 import java.util.Base64;
 
-public class Base64Encrypt implements IEncryptListener {
+public class Base64Encrypt implements IEncryptTransform {
 
     @Override
     public byte[] onEncrypt(byte[] src) {

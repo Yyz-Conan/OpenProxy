@@ -1,8 +1,8 @@
 package cryption;
 
-import cryption.joggle.IDecryptListener;
+import cryption.joggle.IDecryptTransform;
 
-public class RSADecrypt implements IDecryptListener {
+public class RSADecrypt implements IDecryptTransform {
 
     @Override
     public byte[] onDecrypt(byte[] unpack) {

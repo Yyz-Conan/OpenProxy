@@ -8,8 +8,9 @@ import connect.EncryptionSender;
 import connect.network.base.joggle.INetSender;
 import connect.network.nio.NioClientFactory;
 import cryption.*;
-import cryption.joggle.IDecryptListener;
-import cryption.joggle.IEncryptListener;
+import cryption.joggle.IDecryptTransform;
+import cryption.joggle.IEncryptTransform;
+import intercept.ProxyFilterManager;
 import log.LogDog;
 
 import java.nio.channels.SocketChannel;
@@ -26,8 +27,8 @@ public class RemoteProxyClient extends AbsClient {
 
         String encryption = AnalysisConfig.getInstance().getValue("encryptionMode");
 
-        IDecryptListener decryptListener = null;
-        IEncryptListener encryptListener = null;
+        IDecryptTransform decryptListener = null;
+        IEncryptTransform encryptListener = null;
 
         if (EncryptionType.RSA.name().equals(encryption)) {
             decryptListener = new RSADecrypt();
