@@ -2,7 +2,8 @@ import config.AnalysisConfig;
 import config.ConfigKey;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerFactory;
-import connect.server.HttpProxyServer;
+import connect.network.nio.SimpleSendTask;
+import connect.server.MultipleProxyServer;
 import cryption.EncryptionType;
 import cryption.RSADataEnvoy;
 import intercept.BuiltInInterceptFilter;
@@ -24,17 +25,18 @@ import java.util.Properties;
 public class ProxyMain {
 
     private static final String defaultPort = "7777";
+    private static final String loHost = "127.0.0.1";
 
     // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
         String configFile = initEnv(ConfigKey.FILE_CONFIG);
         AnalysisConfig.getInstance().analysis(configFile);
         initInterceptFilter();
-        initWatch();
         startServer();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             NioClientFactory.destroy();
             NioServerFactory.destroy();
+            SimpleSendTask.getInstance().close();
             WatchConfigFileTask.getInstance().destroy();
             TaskExecutorPoolManager.getInstance().destroyAll();
         }));
@@ -84,7 +86,22 @@ public class ProxyMain {
             BuiltInInterceptFilter proxyFilter = new BuiltInInterceptFilter();
             proxyFilter.init(interceptFile);
             InterceptFilterManager.getInstance().addFilter(proxyFilter);
+            initWatch();
         }
+    }
+
+
+    private static void initWatch() {
+        Properties properties = System.getProperties();
+        String value = properties.getProperty("sun.java.command");
+        String dirPath = properties.getProperty("user.dir");
+        String fileName = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
+        if ("ProxyMain".equals(value)) {
+            //idea模式下
+            dirPath = dirPath + "\\out\\production\\resources";
+        }
+        InterceptFileChangeListener changeListener = new InterceptFileChangeListener(dirPath, fileName);
+        WatchConfigFileTask.getInstance().addWatchFile(changeListener);
     }
 
     private static void initRSA() {
@@ -110,23 +127,14 @@ public class ProxyMain {
         }
 
         //开启代理服务
-        HttpProxyServer httpProxyServer = new HttpProxyServer();
-        httpProxyServer.setAddress(host, Integer.parseInt(port), false);
+        SimpleSendTask.getInstance().open();
+        MultipleProxyServer multipleProxyServer = new MultipleProxyServer();
+        multipleProxyServer.setAddress(host, Integer.parseInt(port), false);
         NioServerFactory.getFactory().open();
-        NioServerFactory.getFactory().addTask(httpProxyServer);
-        LogDog.d("==> HttpProxy Server address = " + host + ":" + port);
+        NioServerFactory.getFactory().addTask(multipleProxyServer);
+        multipleProxyServer = new MultipleProxyServer();
+        multipleProxyServer.setAddress(loHost, Integer.parseInt(port), false);
+        NioServerFactory.getFactory().addTask(multipleProxyServer);
     }
 
-    private static void initWatch() {
-        Properties properties = System.getProperties();
-        String value = properties.getProperty("sun.java.command");
-        String dirPath = properties.getProperty("user.dir");
-        String fileName = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
-        if ("ProxyMain".equals(value)) {
-            //idea模式下
-            dirPath = dirPath + "\\out\\production\\resources";
-        }
-        InterceptFileChangeListener changeListener = new InterceptFileChangeListener(dirPath, fileName);
-        WatchConfigFileTask.getInstance().addWatchFile(changeListener);
-    }
 }

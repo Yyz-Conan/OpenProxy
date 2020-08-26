@@ -7,18 +7,18 @@ import util.StringEnvoy;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 public class ProxyFilterManager {
 
     private static ProxyFilterManager proxyFilterManager;
 
     private String tableFile = null;
-    boolean isWindowsOs = false;
-    private List<String> proxyList;
+    private volatile List<String> proxyList;
+    private volatile List<String> localList;
 
     private ProxyFilterManager() {
         proxyList = new ArrayList<>();
+        localList = new ArrayList<>();
     }
 
     public static ProxyFilterManager getInstance() {
@@ -44,22 +44,19 @@ public class ProxyFilterManager {
     }
 
     private void initImpl(String content) {
-        Properties props = System.getProperties();
-        String os = props.getProperty("os.name").toLowerCase();
-        String[] array;
-        if (os.contains("windows")) {
-            isWindowsOs = true;
-            array = content.split("\r\n");
-        } else {
-            array = content.split("\n");
-        }
+        String[] array = content.split("\n");
         proxyList.clear();
         for (String item : array) {
             if (!item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {
-                proxyList.add(item.replace("\r", ""));
+                String host = item.replace("\r", "");
+                if (host.startsWith("~")) {
+                    localList.add(host.substring(1));
+                } else {
+                    proxyList.add(host);
+                }
             }
         }
-        LogDog.d("Load proxy table , host number of proxyList = " + proxyList.size());
+        LogDog.d("Load proxy table , proxy host number  = " + proxyList.size() + " local host number = " + localList.size());
     }
 
     /**
@@ -68,31 +65,47 @@ public class ProxyFilterManager {
      * @param host
      */
     public void addProxyHost(String host) {
-        boolean isHas = proxyList.contains(host);
-        if (!isHas) {
-            proxyList.add(host);
-            Properties props = System.getProperties();
-            String os = props.getProperty("os.name").toLowerCase();
-            String data;
-            if (os.contains("windows")) {
-                data = host + "\r\n";
-            } else {
-                data = host + "\n";
+        if (StringEnvoy.isEmpty(host)) {
+            return;
+        }
+        synchronized (proxyFilterManager) {
+            host = host.replace("www.", "");
+            boolean isHas = proxyList.contains(host);
+            boolean localHas = localList.contains(host);
+            if (!isHas && !localHas) {
+                proxyList.add(host);
+                String data = host + "\n";
+                FileHelper.writeFileMemMap(new File(tableFile), data.getBytes(), true);
             }
-            FileHelper.writeFileMemMap(new File(tableFile), data.getBytes(), true);
         }
     }
 
+    public boolean isNoProxy(String host) {
+        if (StringEnvoy.isEmpty(host)) {
+            return false;
+        }
+        synchronized (proxyFilterManager) {
+            for (String tmp : localList) {
+                if (host.contains(tmp)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
     public boolean isNeedProxy(String host) {
-        if (StringEnvoy.isNotEmpty(host)) {
+        if (StringEnvoy.isEmpty(host)) {
+            return false;
+        }
+        synchronized (proxyFilterManager) {
             for (String tmp : proxyList) {
                 if (host.contains(tmp)) {
                     return true;
                 }
             }
+            return false;
         }
-        return false;
     }
 
 }

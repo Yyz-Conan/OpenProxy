@@ -1,16 +1,15 @@
 package connect;
 
 
+import connect.network.nio.NioSender;
 import connect.network.nio.buf.MultilevelBuf;
 import cryption.DataPacketManger;
 import cryption.joggle.IEncryptTransform;
 
-import java.io.IOException;
-
 /**
  * 加密发送者
  */
-public class EncryptionSender extends CacheNioSender {
+public class EncryptionSender extends NioSender {
 
     private IEncryptTransform listener;
 
@@ -19,7 +18,7 @@ public class EncryptionSender extends CacheNioSender {
     }
 
     @Override
-    public void sendData(MultilevelBuf buf) throws IOException {
+    public void sendData(MultilevelBuf buf) {
         if (listener != null) {
             buf.flip();
             byte[] data = buf.array();
@@ -30,7 +29,7 @@ public class EncryptionSender extends CacheNioSender {
     }
 
     @Override
-    public void sendData(byte[] data) throws IOException {
+    public void sendData(byte[] data) {
         if (data == null) {
             return;
         }
@@ -38,7 +37,7 @@ public class EncryptionSender extends CacheNioSender {
             byte[] encrypt = listener.onEncrypt(data);
             data = DataPacketManger.packet(encrypt);
         }
-        sendDataImp(data);
+        super.sendData(data);
     }
 
 }

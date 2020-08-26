@@ -2,12 +2,15 @@ package connect;
 
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
+import connect.network.xhttp.XHttpReceiver;
 import connect.network.xhttp.entity.XReceiverMode;
+import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
 import cryption.DecryptionStatus;
 import cryption.joggle.IDecryptTransform;
 import util.IoEnvoy;
 import util.TypeConversion;
+import utils.RequestHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,13 +19,17 @@ import java.nio.channels.SocketChannel;
 /**
  * 解密接收者
  */
-public class DecryptionReceiver extends LocalRequestReceiver {
+public class DecryptionReceiver extends XHttpReceiver {
 
     private IDecryptTransform decryptTransform;
-    private INetSender localTarget;
+    private INetSender localSender;
     private ByteBuffer tag;
     private ByteBuffer packetData;
     private DecryptionStatus decryptionStatus;
+
+    private INetSender remoteSender;
+    private boolean isTLS = false;
+    private boolean isFirstRequest = true;
 
     public DecryptionReceiver(IDecryptTransform decryptTransform) {
         super(null);
@@ -31,6 +38,19 @@ public class DecryptionReceiver extends LocalRequestReceiver {
             tag = ByteBuffer.allocate(4);
             decryptionStatus = DecryptionStatus.TAG;
         }
+    }
+
+    /**
+     * 工作于服务端模式，设置发送者接收tls数据
+     *
+     * @param remoteSender
+     */
+    public void setRequestSender(INetSender remoteSender) {
+        this.remoteSender = remoteSender;
+    }
+
+    public void setTLS() {
+        isTLS = true;
     }
 
     /**
@@ -50,8 +70,17 @@ public class DecryptionReceiver extends LocalRequestReceiver {
      * @param localTarget
      */
     public void setResponseSender(INetSender localTarget) {
-        this.localTarget = localTarget;
+        this.localSender = localTarget;
         setMode(XReceiverMode.RESPONSE);
+    }
+
+    @Override
+    protected void onStatusChange(XReceiverStatus status) {
+        if (status == XReceiverStatus.NONE) {
+            //当前是循环完整个流程
+            reset();
+            isFirstRequest = false;
+        }
     }
 
     @Override
@@ -67,7 +96,8 @@ public class DecryptionReceiver extends LocalRequestReceiver {
                         decryptionStatus = DecryptionStatus.DATA;
                     }
                 } else if (ret == IoEnvoy.FAIL) {
-                    throw new IOException("SocketChannel close !!!");
+                    int packetSize = packetData == null ? -1 : packetData.array().length;
+                    throw new IOException("## decryption read tag fail , packetSize = " + packetSize);
                 }
             }
             if (decryptionStatus == DecryptionStatus.DATA) {
@@ -75,14 +105,15 @@ public class DecryptionReceiver extends LocalRequestReceiver {
                 if (ret == IoEnvoy.SUCCESS) {
                     byte[] decrypt = decryptTransform.onDecrypt(packetData.array());
                     if (getMode() == XReceiverMode.REQUEST) {
-                        super.onHttpReceive(decrypt, decrypt.length, null);
+                        super.onHttpReceive(decrypt, decrypt.length);
                     } else {
-                        localTarget.sendData(decrypt);
+//                        SimpleSendTask.getInstance().sendData(localTarget, decrypt);
+                        localSender.sendData(decrypt);
                     }
                     packetData = null;
                     decryptionStatus = DecryptionStatus.END;
                 } else if (ret == IoEnvoy.FAIL) {
-                    throw new IOException("SocketChannel close !!!");
+                    throw new IOException("## decryption read body fail !!!");
                 }
             }
             if (decryptionStatus == DecryptionStatus.END) {
@@ -91,11 +122,24 @@ public class DecryptionReceiver extends LocalRequestReceiver {
                 if (ret == IoEnvoy.SUCCESS) {
                     decryptionStatus = DecryptionStatus.TAG;
                 } else if (ret == IoEnvoy.FAIL) {
-                    throw new IOException("SocketChannel close !!!");
+                    throw new IOException("decryption read end tag fail !!!");
                 }
             }
         } else {
             super.onRead(channel);
+        }
+    }
+
+    @Override
+    protected void onRequest(byte[] data, int len) {
+        if (data != null) {
+            if (isFirstRequest || !isTLS || RequestHelper.isRequest(data)) {
+                //当前状态是第一次接收到数据或者非https请求
+                super.onRequest(data, len);
+            } else {
+                //当前状态是https请求或者走代理请求
+                remoteSender.sendData(data);
+            }
         }
     }
 

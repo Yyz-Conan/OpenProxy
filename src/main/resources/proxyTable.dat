@@ -1,0 +1,26 @@
+//本配置文件作用是域名直接走代理 ~不走代理（支持热更新，保存则更新不需要重启）
+google.com
+youtube.com
+android.com
+googlevideo.com
+twitter.com
+twimg.com
+proxsee.pscp.tv
+facebook.com
+github.com
+yt3.ggpht.com
+i.ytimg.com
+ocsp.pki.goog
+fonts.gstatic.com
+lh3.googleusercontent.com
+ocsp1.digicert.com
+sb.scorecardresearch.com
+i9.ytimg.com
+status.rapidssl.com
+ajax.googleapis.com
+www.qemu.org
+encrypted-vtbn0.gstatic.com
+~baidu.com
+~git.ym
+~jira.ym
+~192.168.1.1
