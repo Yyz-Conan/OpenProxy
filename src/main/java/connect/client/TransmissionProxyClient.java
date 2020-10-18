@@ -35,24 +35,6 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     private byte[] data;
     private boolean isHttps;
 
-//    /**
-//     * 不走代理服务
-//     *
-//     * @param host
-//     * @param port
-//     * @param sender
-//     */
-//    public TransmissionProxyClient(String host, int port, NioSender sender, DecryptionReceiver receiver, XResponse response) {
-//        if (sender == null || receiver == null || host == null || port <= 0) {
-//            throw new NullPointerException("host port  sender or receiver is null !!!");
-//        }
-//        this.localSender = sender;
-//        this.localReceiver = receiver;
-//        setAddress(host, port, false);
-//        isHttps = XResponseHelper.isTLS(response);
-//        ByteCacheStream raw = response.getRawData();
-//        data = raw.toByteArray();
-//    }
 
     /**
      * 走代理服务
@@ -72,14 +54,14 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     }
 
     public void enableLocalConnect(String host, int port) {
-        setAddress(host, port, false);
+        setAddress(host, port);
     }
 
     public void enableProxyConnect(String realHost) {
         this.realHost = realHost;
         String remoteHost = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_REMOTE_HOST);
         int remotePort = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_REMOTE_PORT);
-        setAddress(remoteHost, remotePort, false);
+        setAddress(remoteHost, remotePort);
     }
 
 
@@ -114,9 +96,9 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             setSender(new NioSender());
         }
 
-        localReceiver.setRequestSender(getSender());
+        getSender().setChannel(selectionKey, channel);
         getSender().setSenderFeedback(this);
-        getSender().setChannel(channel);
+        localReceiver.setRequestSender(getSender());
 
         if (StringEnvoy.isNotEmpty(realHost) || isHttps) {
             //如果当前是https请求或者走代理请求
@@ -131,33 +113,36 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     }
 
     @Override
-    public void onReceiveFullData(MultilevelBuf buf) {
+    public void onReceiveFullData(MultilevelBuf buf, Throwable e) {
+        if (e != null) {
+            LogDog.e("++> onReceiveException host = " + getHost() + ":" + getPort());
+        }
         //对应NioReceiver
         localSender.sendData(buf);
     }
 
     @Override
-    public void onReceiveException(Exception e) {
-        LogDog.e("++> onReceiveException host = " + getHost() + ":" + getPort());
-    }
-
-    @Override
-    protected void onConnectError() {
+    protected void onConnectError(Throwable throwable) {
         //链接失败，如果不是配置强制不走代理则尝试代理链接
         isRestartConnect = isCanProxy;
     }
 
     @Override
     protected void onRecovery() {
+        String host = getHost();
+        int port = getPort();
+        super.onRecovery();
         if (isRestartConnect) {
-            LogDog.e("==> Local connection failed, start to try to use proxy, host = " + getHost());
+            LogDog.e("==> Local connection failed, start to try to use proxy, host = " + host);
             isCanProxy = false;
             //添加需要代理访问的域名
-            ProxyFilterManager.getInstance().addProxyHost(getHost());
-            enableProxyConnect(getHost());
+            ProxyFilterManager.getInstance().addProxyHost(host);
+            enableProxyConnect(host);
             //复用本类，准换走代理服务
+            setAddress(host, port);
             NioClientFactory.getFactory().addTask(this);
         }
+
     }
 
     @Override

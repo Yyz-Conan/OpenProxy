@@ -3,6 +3,7 @@ package connect;
 
 import connect.network.nio.NioSender;
 import connect.network.nio.buf.MultilevelBuf;
+import connect.network.xhttp.XMultiplexCacheManger;
 import cryption.DataPacketManger;
 import cryption.joggle.IEncryptTransform;
 
@@ -23,6 +24,7 @@ public class EncryptionSender extends NioSender {
             buf.flip();
             byte[] data = buf.array();
             sendData(data);
+            XMultiplexCacheManger.getInstance().lose(buf);
         } else {
             super.sendData(buf);
         }

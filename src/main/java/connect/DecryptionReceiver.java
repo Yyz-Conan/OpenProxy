@@ -59,8 +59,8 @@ public class DecryptionReceiver extends XHttpReceiver {
      * @param receiver
      */
     @Override
-    public void setReceiver(INetReceiver<XResponse> receiver) {
-        super.setReceiver(receiver);
+    public void setDataReceiver(INetReceiver<XResponse> receiver) {
+        super.setDataReceiver(receiver);
         setMode(XReceiverMode.REQUEST);
     }
 
@@ -78,7 +78,6 @@ public class DecryptionReceiver extends XHttpReceiver {
     protected void onStatusChange(XReceiverStatus status) {
         if (status == XReceiverStatus.NONE) {
             //当前是循环完整个流程
-            reset();
             isFirstRequest = false;
         }
     }
@@ -105,7 +104,7 @@ public class DecryptionReceiver extends XHttpReceiver {
                 if (ret == IoEnvoy.SUCCESS) {
                     byte[] decrypt = decryptTransform.onDecrypt(packetData.array());
                     if (getMode() == XReceiverMode.REQUEST) {
-                        super.onHttpReceive(decrypt, decrypt.length);
+                        super.onHttpReceive(decrypt, decrypt.length, null);
                     } else {
 //                        SimpleSendTask.getInstance().sendData(localTarget, decrypt);
                         localSender.sendData(decrypt);
@@ -131,11 +130,11 @@ public class DecryptionReceiver extends XHttpReceiver {
     }
 
     @Override
-    protected void onRequest(byte[] data, int len) {
+    protected void onRequest(byte[] data, int len, Exception e) {
         if (data != null) {
             if (isFirstRequest || !isTLS || RequestHelper.isRequest(data)) {
                 //当前状态是第一次接收到数据或者非https请求
-                super.onRequest(data, len);
+                super.onRequest(data, len, e);
             } else {
                 //当前状态是https请求或者走代理请求
                 remoteSender.sendData(data);

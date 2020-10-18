@@ -5,14 +5,12 @@ import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
-
-import java.nio.ByteBuffer;
+import connect.network.nio.buf.MultilevelBuf;
+import connect.network.xhttp.XMultiplexCacheManger;
 
 public class AbsClient extends NioClientTask implements ISenderFeedback {
 
     protected ICloseListener listener;
-//    protected byte[] data;
-//    protected XResponse response;
     protected boolean isCanProxy = false;
 
     public void setCanProxy(boolean canProxy) {
@@ -23,13 +21,6 @@ public class AbsClient extends NioClientTask implements ISenderFeedback {
         this.listener = listener;
     }
 
-//    public void setData(byte[] data) {
-//        this.data = data;
-//    }
-
-//    public void setResponse(XResponse response) {
-//        this.response = response;
-//    }
 
     @Override
     protected void onCloseClientChannel() {
@@ -39,9 +30,12 @@ public class AbsClient extends NioClientTask implements ISenderFeedback {
     }
 
     @Override
-    public void onSenderFeedBack(INetSender iNetSender, ByteBuffer byteBuffer, Throwable throwable) {
+    public void onSenderFeedBack(INetSender iNetSender, Object data, Throwable throwable) {
         if (throwable != null) {
             NioClientFactory.getFactory().removeTask(this);
+        }
+        if (data instanceof MultilevelBuf) {
+            XMultiplexCacheManger.getInstance().lose((MultilevelBuf) data);
         }
     }
 }

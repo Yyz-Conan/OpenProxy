@@ -2,7 +2,6 @@ import config.AnalysisConfig;
 import config.ConfigKey;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerFactory;
-import connect.network.nio.SimpleSendTask;
 import connect.server.MultipleProxyServer;
 import cryption.EncryptionType;
 import cryption.RSADataEnvoy;
@@ -36,7 +35,6 @@ public class ProxyMain {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             NioClientFactory.destroy();
             NioServerFactory.destroy();
-            SimpleSendTask.getInstance().close();
             WatchConfigFileTask.getInstance().destroy();
             TaskExecutorPoolManager.getInstance().destroyAll();
         }));
@@ -127,13 +125,12 @@ public class ProxyMain {
         }
 
         //开启代理服务
-        SimpleSendTask.getInstance().open();
         MultipleProxyServer multipleProxyServer = new MultipleProxyServer();
-        multipleProxyServer.setAddress(host, Integer.parseInt(port), false);
+        multipleProxyServer.setAddress(host, Integer.parseInt(port));
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(multipleProxyServer);
         multipleProxyServer = new MultipleProxyServer();
-        multipleProxyServer.setAddress(loHost, Integer.parseInt(port), false);
+        multipleProxyServer.setAddress(loHost, Integer.parseInt(port));
         NioServerFactory.getFactory().addTask(multipleProxyServer);
     }
 
