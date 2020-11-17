@@ -30,7 +30,7 @@ public class RSADataEnvoy {
     private Cipher cipher;
 
     //"RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING"
-    private static String RSA_ALGORITHM = "RSA";
+    private static final String RSA_ALGORITHM = "RSA";
     private final static String CYPHER = "RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING";
     private static RSADataEnvoy dataPolicy = null;
 

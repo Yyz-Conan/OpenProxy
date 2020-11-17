@@ -3,8 +3,6 @@ package intercept;
 import intercept.joggle.IWatchFileChangeListener;
 import log.LogDog;
 
-import java.io.File;
-
 public class InterceptFileChangeListener implements IWatchFileChangeListener {
     private String filePath;
     private String fileName;
@@ -16,7 +14,7 @@ public class InterceptFileChangeListener implements IWatchFileChangeListener {
 
     @Override
     public String getTargetFile() {
-        return filePath + File.separator + fileName;
+        return filePath;
     }
 
     @Override
@@ -29,7 +27,7 @@ public class InterceptFileChangeListener implements IWatchFileChangeListener {
             proxyFilter.init(getTargetFile());
             //添加新的过滤器
             InterceptFilterManager.getInstance().addFilter(proxyFilter);
-            LogDog.d(getTargetFile() + "配置文件发生修改 !!! ");
+            LogDog.d(getTargetFile() + " the configuration file has been modified !!! ");
         }
     }
 }

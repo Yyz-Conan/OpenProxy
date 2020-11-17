@@ -2,8 +2,6 @@ package intercept;
 
 import intercept.joggle.IWatchFileChangeListener;
 
-import java.io.File;
-
 public class ProxyFileChangeListener implements IWatchFileChangeListener {
     private String filePath;
     private String fileName;
@@ -15,7 +13,7 @@ public class ProxyFileChangeListener implements IWatchFileChangeListener {
 
     @Override
     public String getTargetFile() {
-        return filePath + File.separator + fileName;
+        return filePath;
     }
 
     @Override

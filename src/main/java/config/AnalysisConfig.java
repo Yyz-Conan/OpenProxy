@@ -33,7 +33,7 @@ public class AnalysisConfig {
             return;
         }
         File file = new File(configFile);
-        if (!file.exists() || file.length() > 1024) {
+        if (!file.exists()) {
             return;
         }
         configMap = new HashMap<>();

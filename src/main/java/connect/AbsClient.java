@@ -5,8 +5,8 @@ import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
-import connect.network.nio.buf.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
+import connect.network.xhttp.utils.MultilevelBuf;
 
 public class AbsClient extends NioClientTask implements ISenderFeedback {
 

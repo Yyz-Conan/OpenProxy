@@ -9,13 +9,14 @@ import connect.network.base.joggle.INetReceiver;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioReceiver;
 import connect.network.nio.NioSender;
-import connect.network.nio.buf.MultilevelBuf;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.utils.ByteCacheStream;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.utils.XResponseHelper;
 import cryption.*;
 import cryption.joggle.IDecryptTransform;
 import cryption.joggle.IEncryptTransform;
+import intercept.InterceptFilterManager;
 import intercept.ProxyFilterManager;
 import log.LogDog;
 import util.StringEnvoy;
@@ -59,8 +60,8 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
 
     public void enableProxyConnect(String realHost) {
         this.realHost = realHost;
-        String remoteHost = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_REMOTE_HOST);
-        int remotePort = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_REMOTE_PORT);
+        String remoteHost = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_REMOTE_PROXY_HOST);
+        int remotePort = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_REMOTE_PROXY_PORT);
         setAddress(remoteHost, remotePort);
     }
 
@@ -89,10 +90,10 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             DecryptionReceiver receiver = new DecryptionReceiver(decryptListener);
             //配置工作模式为客户端模式
             receiver.setResponseSender(localSender);
-            setReceive(receiver);
+            setReceive(receiver.getHttpReceiver());
             setSender(new EncryptionSender(encryptListener));
         } else {
-            setReceive(new NioReceiver<>(this));
+            setReceive(new NioReceiver(this));
             setSender(new NioSender());
         }
 
@@ -136,13 +137,15 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             LogDog.e("==> Local connection failed, start to try to use proxy, host = " + host);
             isCanProxy = false;
             //添加需要代理访问的域名
-            ProxyFilterManager.getInstance().addProxyHost(host);
-            enableProxyConnect(host);
-            //复用本类，准换走代理服务
-            setAddress(host, port);
-            NioClientFactory.getFactory().addTask(this);
+            boolean isBackListHost = InterceptFilterManager.getInstance().isIntercept(host);
+            if (!isBackListHost) {
+                ProxyFilterManager.getInstance().addProxyHost(host);
+                enableProxyConnect(host);
+                //复用本类，准换走代理服务
+                setAddress(host, port);
+                NioClientFactory.getFactory().addTask(this);
+            }
         }
-
     }
 
     @Override
@@ -151,6 +154,5 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             listener.onClose(realHost);
         }
     }
-
 
 }

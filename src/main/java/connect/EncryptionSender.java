@@ -2,10 +2,11 @@ package connect;
 
 
 import connect.network.nio.NioSender;
-import connect.network.nio.buf.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
-import cryption.DataPacketManger;
+import connect.network.xhttp.utils.MultilevelBuf;
 import cryption.joggle.IEncryptTransform;
+import util.TypeConversion;
+import utils.DataPacketManger;
 
 /**
  * 加密发送者
@@ -37,9 +38,16 @@ public class EncryptionSender extends NioSender {
         }
         if (listener != null) {
             byte[] encrypt = listener.onEncrypt(data);
-            data = DataPacketManger.packet(encrypt);
+            //send protocol head
+            super.sendData(DataPacketManger.PACK_PROXY_TAG);
+            //send data length
+            byte[] length = TypeConversion.intToByte(encrypt.length);
+            super.sendData(length);
+            //send data
+            super.sendData(encrypt);
+        } else {
+            super.sendData(data);
         }
-        super.sendData(data);
     }
 
 }
