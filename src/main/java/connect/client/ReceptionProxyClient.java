@@ -73,7 +73,7 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
     }
 
     @Override
-    protected void onConnectCompleteChannel(SocketChannel channel) throws Exception {
+    protected void onConnectCompleteChannel(SocketChannel channel) {
         super.onConnectCompleteChannel(channel);
         getSender().setChannel(selectionKey, channel);
     }
