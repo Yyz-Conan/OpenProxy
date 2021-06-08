@@ -6,7 +6,7 @@ import connect.network.base.joggle.ISenderFeedback;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
 import connect.network.xhttp.XMultiplexCacheManger;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 
 public class AbsClient extends NioClientTask implements ISenderFeedback {
 
@@ -34,8 +34,8 @@ public class AbsClient extends NioClientTask implements ISenderFeedback {
         if (throwable != null) {
             NioClientFactory.getFactory().removeTask(this);
         }
-        if (data instanceof MultilevelBuf) {
-            XMultiplexCacheManger.getInstance().lose((MultilevelBuf) data);
+        if (data instanceof MultiLevelBuf) {
+            XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
         }
     }
 }

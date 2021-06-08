@@ -91,7 +91,7 @@ public class DecryptionReceiver {
     private class CoreHttpReceiver extends NioReceiver {
 
         @Override
-        protected void onRead(SocketChannel channel) throws Throwable {
+        protected void onReadNetData(SocketChannel channel) throws Throwable {
             if (decryptTransform != null) {
                 if (decryptionStatus == DecryptionStatus.TAG) {
                     packetHead.clear();
@@ -139,7 +139,7 @@ public class DecryptionReceiver {
                     }
                 }
             } else {
-                super.onRead(channel);
+                super.onReadNetData(channel);
             }
         }
     }

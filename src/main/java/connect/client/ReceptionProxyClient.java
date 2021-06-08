@@ -5,7 +5,7 @@ import config.ConfigKey;
 import connect.DecryptionReceiver;
 import connect.EncryptionSender;
 import connect.joggle.ICloseListener;
-import connect.network.base.TaskStatus;
+import connect.network.base.NetTaskStatus;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
@@ -14,7 +14,7 @@ import connect.network.nio.NioClientTask;
 import connect.network.xhttp.XMultiplexCacheManger;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.utils.ByteCacheStream;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import connect.network.xhttp.utils.XResponseHelper;
 import connect.server.MultipleProxyServer;
 import cryption.*;
@@ -23,6 +23,7 @@ import cryption.joggle.IEncryptTransform;
 import intercept.InterceptFilterManager;
 import intercept.ProxyFilterManager;
 import log.LogDog;
+import track.SpiderEnvoy;
 import util.StringEnvoy;
 import utils.HtmlGenerator;
 
@@ -34,12 +35,21 @@ import java.nio.channels.SocketChannel;
 public class ReceptionProxyClient extends NioClientTask implements ICloseListener, ISenderFeedback, INetReceiver<XResponse> {
 
     private String requestHost = null;
+    private boolean isBlacklist = false;
     private NioClientTask transmissionProxyClient;
     private boolean isServerMode;
     private DecryptionReceiver receiver;
+    private boolean isDebug;
+    private boolean isEnableProxy;
 
     public ReceptionProxyClient(SocketChannel channel) {
         super(channel, null);
+
+        isEnableProxy = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.CONFIG_ENABLE_PROXY);
+        isDebug = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.KEY_DEBUG_MODE);
+        if (isDebug) {
+            SpiderEnvoy.getInstance().startWatchKey(ReceptionProxyClient.this.toString());
+        }
 
         IDecryptTransform decryptListener = null;
         IEncryptTransform encryptListener = null;
@@ -76,32 +86,50 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
     protected void onConnectCompleteChannel(SocketChannel channel) {
         super.onConnectCompleteChannel(channel);
         getSender().setChannel(selectionKey, channel);
+        if (isDebug) {
+            SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), "onConnectCompleteChannel");
+        }
     }
 
     @Override
     public void onReceiveFullData(XResponse response, Throwable e) {
         String newRequestHost = XResponseHelper.getHost(response);
         if (StringEnvoy.isEmpty(newRequestHost) && StringEnvoy.isEmpty(requestHost)) {
+            if (isDebug) {
+                String msg = "newRequestHost and requestHost is null ";
+                SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            }
             NioClientFactory.getFactory().removeTask(ReceptionProxyClient.this);
             return;
         }
 
         //黑名单过滤
         if (InterceptFilterManager.getInstance().isIntercept(newRequestHost)) {
+            isBlacklist = true;
             LogDog.e("++> intercept blacklist host = " + newRequestHost);
-            if (XResponseHelper.isTLS(response)) {
-                getSender().sendData(HtmlGenerator.httpsTunnelEstablished());
-            }
+//            if (XResponseHelper.isTLS(response)) {
+//                getSender().sendData(HtmlGenerator.httpsTunnelEstablished());
+//            } else {
+            getSender().sendData(HtmlGenerator.headDenialService());
+//            }
             requestHost = newRequestHost;
             getSender().sendData(HtmlGenerator.createInterceptHtml(newRequestHost));
-            NioClientFactory.getFactory().removeTask(this);
+
+            if (isDebug) {
+                String msg = "newRequestHost in black menu";
+                SpiderEnvoy.getInstance().pinKeyProbe(toString(), msg);
+            }
             return;
         }
 
-        if (StringEnvoy.isNotEmpty(requestHost) && !newRequestHost.equals(requestHost) && isServerMode) {
+        if (StringEnvoy.isNotEmpty(requestHost) && !newRequestHost.equals(requestHost)) {
             //发现当前请求的网站跟上次请求的网站不一样，则关闭之前的链接（只限制运行于服务模式）
             NioClientFactory.getFactory().removeTask(transmissionProxyClient);
             transmissionProxyClient = null;
+            String msg = "the new request host = " + newRequestHost + " is inconsistent with the current request host = " + requestHost;
+            if (isDebug) {
+                SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            }
         }
 
         if (transmissionProxyClient != null) {
@@ -111,6 +139,11 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
             if (sender != null) {
                 sender.sendData(raw.toByteArray());
             }
+            String msg = "multiplex curt proxy send data, newRequestHost = " + newRequestHost + " requestHost = " + requestHost;
+            if (isDebug) {
+                SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            }
+            LogDog.d(msg);
         } else {
             LogDog.d("--> Connect " + newRequestHost);
             TransmissionProxyClient client;
@@ -119,24 +152,38 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
                 //当前是服务模式，请求指定的域名，需要响应 connect 请求
                 client = new TransmissionProxyClient(getSender(), receiver, response);
                 client.enableLocalConnect(newRequestHost, port);
+
+                if (isDebug) {
+                    String msg = "server model create client newRequestHost = " + newRequestHost + " port = " + port;
+                    SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                }
+
             } else {
                 //当前是客户端模式
                 boolean isNeedProxy = ProxyFilterManager.getInstance().isNeedProxy(newRequestHost);
-                if (isNeedProxy) {
+                client = new TransmissionProxyClient(getSender(), receiver, response);
+                if (isNeedProxy && isEnableProxy) {
                     //走代理服务访问
-                    client = new TransmissionProxyClient(getSender(), receiver, response);
                     client.enableProxyConnect(newRequestHost);
+                    if (isDebug) {
+                        String msg = "client model need proxy create proxy client realHost = " + newRequestHost;
+                        SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                    }
                 } else {
-                    boolean isNoProxy = ProxyFilterManager.getInstance().isNoProxy(newRequestHost);
+//                    boolean isNoProxy = ProxyFilterManager.getInstance().isNoProxy(newRequestHost);
                     //先尝试使用本地网络,如果不可以则不走代理，需要响应 connect 请求
-                    client = new TransmissionProxyClient(getSender(), receiver, response);
                     client.enableLocalConnect(newRequestHost, port);
                     //如果本地网络不能用则走代理
-                    client.setCanProxy(!isNoProxy);
-                }
-            }
+//                    client.setCanProxy(!isNoProxy && isEnableProxy);
 
-            client.setOnCloseListener(this);
+                    if (isDebug) {
+                        String msg = "client model local net model create client newRequestHost = " + newRequestHost + " port = " + port;
+                        SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                    }
+                }
+
+            }
+            client.setOnCloseListener(ReceptionProxyClient.this);
             NioClientFactory.getFactory().addTask(client);
             transmissionProxyClient = client;
             requestHost = newRequestHost;
@@ -146,8 +193,13 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
 
     @Override
     public void onClose(String host) {
-        if (StringEnvoy.isNotEmpty(host) && host.equals(requestHost) && getTaskStatus() == TaskStatus.RUN) {
+        if (StringEnvoy.isNotEmpty(host) && host.equals(requestHost) && getTaskStatus() == NetTaskStatus.RUN) {
             NioClientFactory.getFactory().removeTask(ReceptionProxyClient.this);
+
+            if (isDebug) {
+                String msg = "onClose requestHost = " + requestHost + " proxy host = " + host;
+                SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            }
         }
     }
 
@@ -156,8 +208,11 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
         if (throwable != null) {
             NioClientFactory.getFactory().removeTask(transmissionProxyClient);
         }
-        if (data instanceof MultilevelBuf) {
-            XMultiplexCacheManger.getInstance().lose((MultilevelBuf) data);
+        if (data instanceof MultiLevelBuf) {
+            XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
+        }
+        if (isBlacklist) {
+            NioClientFactory.getFactory().removeTask(ReceptionProxyClient.this);
         }
     }
 
@@ -169,6 +224,11 @@ public class ReceptionProxyClient extends NioClientTask implements ICloseListene
             LogDog.d("--> close " + requestHost + " [ connect count = " + MultipleProxyServer.localConnectCount.decrementAndGet() + " ] ");
         }
         NioClientFactory.getFactory().removeTask(transmissionProxyClient);
+
+        if (isDebug) {
+            String report = SpiderEnvoy.getInstance().endWatchKey(ReceptionProxyClient.this.toString());
+            LogDog.saveLog(report);
+        }
     }
 
 }

@@ -88,7 +88,7 @@ public class RSADataEnvoy {
 
 
     /**
-     * 公钥加密，私钥解密【加解密】
+     * 公钥加密，私钥解密[加解密]
      *
      * @param data      要处理的数据
      * @param isPublic  数据是否用公钥加密
@@ -121,7 +121,7 @@ public class RSADataEnvoy {
 
 
 //    /**
-//     * 公钥加密，私钥解密【加密】
+//     * 公钥加密，私钥解密[加密]
 //     *
 //     * @param src
 //     * @return
@@ -141,7 +141,7 @@ public class RSADataEnvoy {
 //    }
 //
 //    /**
-//     * 公钥加密，私钥解密【解密】
+//     * 公钥加密，私钥解密[解密]
 //     *
 //     * @return
 //     */
@@ -161,7 +161,7 @@ public class RSADataEnvoy {
 
 
 //    /**
-//     * 私钥加密，公钥解密【加密】
+//     * 私钥加密，公钥解密[加密]
 //     *
 //     * @param src
 //     * @return
@@ -182,7 +182,7 @@ public class RSADataEnvoy {
 //
 //
 //    /**
-//     * 私钥加密，公钥解密【解密】
+//     * 私钥加密，公钥解密[解密]
 //     *
 //     * @param encrypt
 //     * @return

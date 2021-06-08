@@ -15,7 +15,7 @@ public class MultipleProxyServer extends NioServerTask {
 
     @Override
     protected void onBootServerComplete(ServerSocketChannel channel) {
-        LogDog.d("==> Proxy Server Start Success : " + getServerHost() + ":" + getServerPort());
+        LogDog.d("==> Proxy Server Start Success : " + getHost() + ":" + getPort());
         NioClientFactory.getFactory().open();
     }
 
@@ -28,7 +28,7 @@ public class MultipleProxyServer extends NioServerTask {
 
     @Override
     protected void onCloseServerChannel() {
-        LogDog.e("==> Proxy Server close ing = " + getServerHost() + ":" + getServerPort());
+        LogDog.e("==> Proxy Server close ing = " + getHost() + ":" + getPort());
         NioClientFactory.destroy();
     }
 }

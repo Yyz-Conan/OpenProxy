@@ -2,7 +2,7 @@ package connect;
 
 import connect.joggle.IUpdateAffairsCallBack;
 import connect.network.base.SocketChannelCloseException;
-import connect.network.base.joggle.IReceiverDecodeHandle;
+import connect.network.base.joggle.IReceiverHookHandler;
 import log.LogDog;
 import util.IoEnvoy;
 import util.TypeConversion;
@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 
-public class UpdateDecoderProcessor implements IReceiverDecodeHandle {
+public class UpdateDecoderProcessor implements IReceiverHookHandler {
 
     private ReceiverStatus receiverStatus = ReceiverStatus.TAG;
     private UpdateStatus updateStatus = UpdateStatus.VERSION;

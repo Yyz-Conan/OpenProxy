@@ -10,13 +10,13 @@ import cryption.RSADataEnvoy;
 import intercept.BuiltInInterceptFilter;
 import intercept.InterceptFileChangeListener;
 import intercept.InterceptFilterManager;
-import intercept.WatchConfigFileTask;
+import intercept.WatchFileManager;
+import log.LogDog;
 import task.executor.TaskExecutorPoolManager;
 import util.NetUtils;
 import util.StringEnvoy;
 
 import java.io.File;
-import java.net.URL;
 
 public class ProxyMain {
 
@@ -25,11 +25,11 @@ public class ProxyMain {
 
     private static final String CURRENT_COMMAND = "ProxyMain";
 
-    //当前工作目录
+    private static String IDE_URL = "src" + File.separator + "main" + File.separator + "resources" + File.separator;
+
     private static String currentWorkDir = null;
     private static String currentCommand = null;
 
-    // 183.2.236.16  百度 = 14.215.177.38  czh = 58.67.203.13
     public static void main(String[] args) {
         currentWorkDir = System.getProperty(ConfigKey.KEY_USER_DIR) + File.separator;
         currentCommand = System.getProperty(ConfigKey.KEY_COMMAND);
@@ -40,20 +40,18 @@ public class ProxyMain {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             NioClientFactory.destroy();
             NioServerFactory.destroy();
-            WatchConfigFileTask.getInstance().destroy();
+            WatchFileManager.getInstance().destroy();
             TaskExecutorPoolManager.getInstance().destroyAll();
             XMultiplexCacheManger.destroy();
         }));
+        LogDog.initLogSavePath(currentWorkDir, "http_proxy");
     }
 
     private static String initEnv(String configFile) {
-        String filePath = null;
+        String filePath;
         if (CURRENT_COMMAND.equals(currentCommand)) {
             //ide model，not create file
-            URL url = ProxyMain.class.getResource(configFile);
-            if (url != null) {
-                filePath = url.getPath();
-            }
+            filePath = currentWorkDir + IDE_URL + configFile;
         } else {
             filePath = currentWorkDir + configFile;
         }
@@ -78,7 +76,7 @@ public class ProxyMain {
         String interceptFileName = AnalysisConfig.getInstance().getValue(ConfigKey.FILE_INTERCEPT);
         String interceptPath = initEnv(interceptFileName);
         InterceptFileChangeListener changeListener = new InterceptFileChangeListener(interceptPath, interceptFileName);
-        WatchConfigFileTask.getInstance().addWatchFile(changeListener);
+        WatchFileManager.getInstance().addWatchFile(changeListener);
     }
 
     private static void initRSA() {

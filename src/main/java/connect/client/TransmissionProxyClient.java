@@ -11,14 +11,14 @@ import connect.network.nio.NioReceiver;
 import connect.network.nio.NioSender;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.utils.ByteCacheStream;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import connect.network.xhttp.utils.XResponseHelper;
 import cryption.*;
 import cryption.joggle.IDecryptTransform;
 import cryption.joggle.IEncryptTransform;
-import intercept.InterceptFilterManager;
 import intercept.ProxyFilterManager;
 import log.LogDog;
+import track.SpiderEnvoy;
 import util.StringEnvoy;
 import utils.HtmlGenerator;
 
@@ -27,7 +27,7 @@ import java.nio.channels.SocketChannel;
 /**
  * 代理转发客户http请求
  */
-public class TransmissionProxyClient extends AbsClient implements INetReceiver<MultilevelBuf> {
+public class TransmissionProxyClient extends AbsClient implements INetReceiver<MultiLevelBuf> {
 
     private String realHost = null;
     private boolean isRestartConnect = false;
@@ -35,6 +35,7 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     private DecryptionReceiver localReceiver;
     private byte[] data;
     private boolean isHttps;
+    private boolean isDebug;
 
 
     /**
@@ -51,7 +52,10 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
         isHttps = XResponseHelper.isTLS(response);
         ByteCacheStream raw = response.getRawData();
         data = raw.toByteArray();
-
+        isDebug = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.KEY_DEBUG_MODE);
+        if (isDebug) {
+            SpiderEnvoy.getInstance().startWatchKey(TransmissionProxyClient.this.toString());
+        }
     }
 
     public void enableLocalConnect(String host, int port) {
@@ -93,7 +97,9 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             setReceive(receiver.getHttpReceiver());
             setSender(new EncryptionSender(encryptListener));
         } else {
-            setReceive(new NioReceiver(this));
+            NioReceiver receiver = new NioReceiver();
+            receiver.setDataReceiver(this);
+            setReceive(receiver);
             setSender(new NioSender());
         }
 
@@ -111,10 +117,21 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
         } else {
             getSender().sendData(data);
         }
+        if (isRestartConnect) {
+            if (getHost().equals(realHost)) {
+                //代理地址不能填入
+                return;
+            }
+            //添加需要代理访问的域名
+            ProxyFilterManager.getInstance().addProxyHost(realHost);
+            if (isDebug) {
+                SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(), "addProxyHost = " + realHost);
+            }
+        }
     }
 
     @Override
-    public void onReceiveFullData(MultilevelBuf buf, Throwable e) {
+    public void onReceiveFullData(MultiLevelBuf buf, Throwable e) {
         if (e != null) {
             LogDog.e("++> onReceiveException host = " + getHost() + ":" + getPort());
         }
@@ -126,25 +143,30 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     protected void onConnectError(Throwable throwable) {
         //链接失败，如果不是配置强制不走代理则尝试代理链接
         isRestartConnect = isCanProxy;
+        if (isDebug) {
+            SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
+                    "onConnectError host = " + getHost() + ":" + getPort());
+        }
     }
 
     @Override
     protected void onRecovery() {
         String host = getHost();
-        int port = getPort();
         super.onRecovery();
         if (isRestartConnect) {
             LogDog.e("==> Local connection failed, start to try to use proxy, host = " + host);
             isCanProxy = false;
-            //添加需要代理访问的域名
-            boolean isBackListHost = InterceptFilterManager.getInstance().isIntercept(host);
-            if (!isBackListHost) {
-                ProxyFilterManager.getInstance().addProxyHost(host);
-                enableProxyConnect(host);
-                //复用本类，准换走代理服务
-                setAddress(host, port);
-                NioClientFactory.getFactory().addTask(this);
+            //配置链接代理服务
+            enableProxyConnect(host);
+            NioClientFactory.getFactory().addTask(this);
+            if (isDebug) {
+                SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
+                        "RestartConnect host = " + getHost() + ":" + getPort());
             }
+        }
+        if (isDebug) {
+            String report = SpiderEnvoy.getInstance().endWatchKey(TransmissionProxyClient.this.toString());
+            LogDog.saveLog(report);
         }
     }
 

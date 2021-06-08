@@ -13,6 +13,14 @@ public class HtmlGenerator {
         return sb.toString().getBytes();
     }
 
+    public static byte[] headDenialService() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("HTTP/1.1 403 Denial Service\r\n");
+        sb.append("Proxy-agent: YYD-HttpProxy\r\n");
+        sb.append("\r\n");
+        return sb.toString().getBytes();
+    }
+
     public static byte[] createInterceptHtml(String interceptHost) {
         StringBuilder builder = new StringBuilder();
         builder.append("<!DOCTYPE html>\n");

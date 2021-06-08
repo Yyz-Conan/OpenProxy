@@ -7,6 +7,7 @@ public class ConfigKey {
 
     public static final String KEY_USER_DIR = "user.dir";
     public static final String KEY_COMMAND =  "sun.java.command";
+    public static final String KEY_DEBUG_MODE = "debug_mode";
 
     public static final String FILE_PUBLIC_KEY = "public.key";
     public static final String FILE_PRIVATE_KEY = "private.key";
@@ -27,6 +28,7 @@ public class ConfigKey {
     public static final String CONFIG_IMAGE = "image";
 
     //只在客户模式下使用
+    public static final String CONFIG_ENABLE_PROXY ="enableProxy";
     public static final String CONFIG_REMOTE_PROXY_HOST = "remoteProxyHost";
     public static final String CONFIG_REMOTE_UPDATE_HOST = "remoteUpdateHost";
     public static final String CONFIG_REMOTE_PROXY_PORT = "remoteProxyPort";

@@ -48,7 +48,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         currentWorkDir = properties.getProperty(ConfigKey.KEY_USER_DIR) + File.separator;
         UpdateDecoderProcessor processor = new UpdateDecoderProcessor(this, isServerMode);
         NioReceiver nioReceiver = new NioReceiver();
-        nioReceiver.setDecodeHandle(processor);
+        nioReceiver.setHookReadNetDataHandler(processor);
         setReceive(nioReceiver);
         NioSender sender = new NioSender();
         if (isServerMode) {

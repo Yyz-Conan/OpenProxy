@@ -14,13 +14,13 @@
 ~adobe.com
 ~evidon.com
 #下面是需要走代理的域名
-google.com
-google.co
-youtube.com
+#google.com
+#google.co
+#youtube.com
 android.com
 twitter.com
 twimg.com
-googlevideo.com
+#googlevideo.com
 facebook.com
 github.com
 githubusercontent.com

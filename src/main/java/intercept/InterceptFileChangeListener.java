@@ -24,7 +24,7 @@ public class InterceptFileChangeListener implements IWatchFileChangeListener {
             InterceptFilterManager.getInstance().clear();
             //创建新的过滤器
             BuiltInInterceptFilter proxyFilter = new BuiltInInterceptFilter();
-            proxyFilter.init(getTargetFile());
+            proxyFilter.init(filePath);
             //添加新的过滤器
             InterceptFilterManager.getInstance().addFilter(proxyFilter);
             LogDog.d(getTargetFile() + " the configuration file has been modified !!! ");

@@ -2,17 +2,19 @@ package intercept;
 
 import intercept.joggle.IInterceptFilter;
 import log.LogDog;
+import sun.rmi.runtime.Log;
 import util.StringEnvoy;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class BuiltInInterceptFilter implements IInterceptFilter {
     private List<String> blackList;
     private List<String> whiteList;
+    private final String pattern = ".+(?=)";
 
     public BuiltInInterceptFilter() {
         blackList = new ArrayList<>();
@@ -21,17 +23,17 @@ public class BuiltInInterceptFilter implements IInterceptFilter {
 
     public void init(String ipTablePath) {
         try {
-            BufferedReader reader = new BufferedReader(new FileReader(new File(ipTablePath)));
+            BufferedReader reader = new BufferedReader(new FileReader(ipTablePath));
             String item;
             do {
                 item = reader.readLine();
                 if (StringEnvoy.isNotEmpty(item) && !item.startsWith("//") && !item.startsWith("##") && !item.startsWith("#")) {
                     String[] itemArray = item.split("!");
                     //添加黑名单
-                    blackList.add(itemArray[0]);
+                    blackList.add(pattern + itemArray[0]);
                     for (int index = 1; index < itemArray.length; index++) {
                         //添加白名单
-                        whiteList.add(itemArray[index]);
+                        whiteList.add(pattern + itemArray[index]);
                     }
                 }
             } while (item != null);
@@ -43,10 +45,10 @@ public class BuiltInInterceptFilter implements IInterceptFilter {
 
     public boolean isIntercept(String host) {
         if (StringEnvoy.isNotEmpty(host)) {
-            for (String tmp : blackList) {
-                if (host.contains(tmp)) {
-                    for (String white : whiteList) {
-                        if (host.contains(white)) {
+            for (String backRule : blackList) {
+                if (Pattern.matches(backRule, host)) {
+                    for (String whiteRule : whiteList) {
+                        if (Pattern.matches(whiteRule, host)) {
                             return false;
                         }
                     }

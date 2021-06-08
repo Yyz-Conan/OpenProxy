@@ -15,7 +15,7 @@ public class UpdateServer extends NioServerTask {
 
     @Override
     protected void onBootServerComplete(ServerSocketChannel channel) {
-        LogDog.d("==> update Server Start Success : " + getServerHost() + ":" + getServerPort());
+        LogDog.d("==> update Server Start Success : " + getHost() + ":" + getPort());
         NioClientFactory.getFactory().open();
     }
 
@@ -27,7 +27,7 @@ public class UpdateServer extends NioServerTask {
 
     @Override
     protected void onCloseServerChannel() {
-        LogDog.e("==> update Server close ing = " + getServerHost() + ":" + getServerPort());
+        LogDog.e("==> update Server close ing = " + getHost() + ":" + getPort());
         NioClientFactory.destroy();
     }
 }
