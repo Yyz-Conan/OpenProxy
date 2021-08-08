@@ -2,5 +2,5 @@ package cryption.joggle;
 
 public interface IEncryptTransform {
 
-    byte[] onEncrypt(byte[] src);
+    byte[] onEncrypt(byte[] encode);
 }

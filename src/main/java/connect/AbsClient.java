@@ -1,31 +1,35 @@
 package connect;
 
-import connect.joggle.ICloseListener;
+import connect.joggle.IRemoteClientCloseListener;
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioClientTask;
+import connect.network.ssl.TLSHandler;
 import connect.network.xhttp.XMultiplexCacheManger;
 import connect.network.xhttp.utils.MultiLevelBuf;
 
+import java.nio.channels.SocketChannel;
+
 public class AbsClient extends NioClientTask implements ISenderFeedback {
 
-    protected ICloseListener listener;
-    protected boolean isCanProxy = false;
+    protected IRemoteClientCloseListener mCloseListener;
 
-    public void setCanProxy(boolean canProxy) {
-        isCanProxy = canProxy;
+    public void setOnCloseListener(IRemoteClientCloseListener listener) {
+        this.mCloseListener = listener;
     }
 
-    public void setOnCloseListener(ICloseListener listener) {
-        this.listener = listener;
+    public AbsClient() {
     }
 
+    public AbsClient(SocketChannel channel, TLSHandler tlsHandler) {
+        super(channel, tlsHandler);
+    }
 
     @Override
     protected void onCloseClientChannel() {
-        if (listener != null) {
-            listener.onClose(getHost());
+        if (mCloseListener != null) {
+            mCloseListener.onClientClose(getHost());
         }
     }
 

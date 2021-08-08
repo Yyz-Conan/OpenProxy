@@ -1,10 +1,12 @@
 import config.AnalysisConfig;
 import config.ConfigKey;
+import connect.http.server.MultipleProxyServer;
+import connect.http.server.UpdateServer;
 import connect.network.nio.NioClientFactory;
 import connect.network.nio.NioServerFactory;
 import connect.network.xhttp.XMultiplexCacheManger;
-import connect.server.MultipleProxyServer;
-import connect.server.UpdateServer;
+import connect.socks5.server.Socks5Server;
+import cryption.DataSafeManager;
 import cryption.EncryptionType;
 import cryption.RSADataEnvoy;
 import intercept.BuiltInInterceptFilter;
@@ -20,7 +22,8 @@ import java.io.File;
 
 public class ProxyMain {
 
-    private static final String defaultPort = "7777";
+    private static final int defaultProxyPort = 7777;
+    private static final int defaultSocks5Port = 9999;
     private static final String loHost = "127.0.0.1";
 
     private static final String CURRENT_COMMAND = "ProxyMain";
@@ -87,28 +90,34 @@ public class ProxyMain {
 
     private static void startServer() {
         String host = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_LOCAL_HOST);
-        String proxyPort = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_PROXY_LOCAL_PORT);
+        int proxyPort = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_PROXY_LOCAL_PORT);
         String updatePort = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_UPDATE_LOCAL_PORT);
+        int socks5Port = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_SOCKS5_LOCAL_PORT);
         String encryption = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_ENCRYPTION_MODE);
 
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
             host = NetUtils.getLocalIp("eth0");
         }
-        if (StringEnvoy.isEmpty(proxyPort)) {
-            proxyPort = defaultPort;
+        if (proxyPort == 0) {
+            proxyPort = defaultProxyPort;
+        }
+
+        if (socks5Port == 0) {
+            proxyPort = defaultSocks5Port;
         }
 
         if (EncryptionType.RSA.name().equals(encryption)) {
             initRSA();
         }
+        DataSafeManager.getInstance().init();
 
         //open proxy server
         MultipleProxyServer multipleProxyServer = new MultipleProxyServer();
-        multipleProxyServer.setAddress(host, Integer.parseInt(proxyPort));
+        multipleProxyServer.setAddress(host, proxyPort);
         NioServerFactory.getFactory().open();
         NioServerFactory.getFactory().addTask(multipleProxyServer);
         multipleProxyServer = new MultipleProxyServer();
-        multipleProxyServer.setAddress(loHost, Integer.parseInt(proxyPort));
+        multipleProxyServer.setAddress(loHost, proxyPort);
         NioServerFactory.getFactory().addTask(multipleProxyServer);
         //open update file server
         UpdateServer updateServer = new UpdateServer();
@@ -117,6 +126,13 @@ public class ProxyMain {
         updateServer = new UpdateServer();
         updateServer.setAddress(loHost, Integer.parseInt(updatePort));
         NioServerFactory.getFactory().addTask(updateServer);
+        //open connect.socks5 proxy server
+        Socks5Server socks5Server = new Socks5Server();
+        socks5Server.setAddress(host, socks5Port);
+        NioServerFactory.getFactory().addTask(socks5Server);
+        socks5Server = new Socks5Server();
+        socks5Server.setAddress(loHost, socks5Port);
+        NioServerFactory.getFactory().addTask(socks5Server);
     }
 
 }

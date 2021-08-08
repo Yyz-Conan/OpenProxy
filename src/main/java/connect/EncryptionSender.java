@@ -4,9 +4,8 @@ package connect;
 import connect.network.nio.NioSender;
 import connect.network.xhttp.XMultiplexCacheManger;
 import connect.network.xhttp.utils.MultiLevelBuf;
-import cryption.joggle.IEncryptTransform;
+import cryption.DataSafeManager;
 import util.TypeConversion;
-import utils.DataPacketManger;
 
 import java.nio.ByteBuffer;
 
@@ -15,21 +14,28 @@ import java.nio.ByteBuffer;
  */
 public class EncryptionSender extends NioSender {
 
-    private IEncryptTransform transform;
+    private boolean mIsNeedEncryption;
+    private byte[] mTag;
 
-    public EncryptionSender(IEncryptTransform transform) {
-        this.transform = transform;
+    public EncryptionSender(boolean isNeedDecryption) {
+        mIsNeedEncryption = isNeedDecryption && DataSafeManager.getInstance().isEnable();
+    }
+
+    public void setEncodeTag(byte[] tag) {
+        mTag = tag;
     }
 
     @Override
     public void sendData(Object objData) {
-        if (transform != null) {
+        if (mIsNeedEncryption) {
             if (objData instanceof MultiLevelBuf) {
                 MultiLevelBuf buf = (MultiLevelBuf) objData;
                 buf.flip();
                 byte[] byteData = buf.array();
                 XMultiplexCacheManger.getInstance().lose(buf);
-                sendEncryptData(byteData);
+                if (byteData != null) {
+                    sendEncryptData(byteData);
+                }
             } else if (objData instanceof byte[]) {
                 sendEncryptData((byte[]) objData);
             }
@@ -39,9 +45,9 @@ public class EncryptionSender extends NioSender {
     }
 
     private void sendEncryptData(byte[] byteData) {
-        byte[] encrypt = transform.onEncrypt(byteData);
+        byte[] encrypt = DataSafeManager.getInstance().encode(byteData);
         //send protocol head
-        ByteBuffer tagData = ByteBuffer.wrap(DataPacketManger.PACK_PROXY_TAG);
+        ByteBuffer tagData = ByteBuffer.wrap(mTag);
         super.sendData(tagData);
         //send data length
         byte[] length = TypeConversion.intToByte(encrypt.length);

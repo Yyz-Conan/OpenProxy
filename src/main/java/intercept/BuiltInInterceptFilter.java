@@ -2,7 +2,6 @@ package intercept;
 
 import intercept.joggle.IInterceptFilter;
 import log.LogDog;
-import sun.rmi.runtime.Log;
 import util.StringEnvoy;
 
 import java.io.BufferedReader;

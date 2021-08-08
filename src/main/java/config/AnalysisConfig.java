@@ -71,10 +71,12 @@ public class AnalysisConfig {
     public int getIntValue(String key) {
         if (configMap != null) {
             String value = configMap.get(key);
-            try {
-                return Integer.parseInt(value);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (value != null) {
+                try {
+                    return Integer.parseInt(value);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         return 0;
