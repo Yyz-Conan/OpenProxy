@@ -88,7 +88,7 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             setSender(new NioSender());
         }
 
-        getSender().setChannel(selectionKey, channel);
+        getSender().setChannel(mSelectionKey, channel);
         getSender().setSenderFeedback(this);
         localReceiver.setRequestSender(getSender());
 

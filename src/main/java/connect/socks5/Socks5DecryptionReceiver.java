@@ -16,8 +16,8 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
     private ISocks5ProcessListener mListener;
     private DecryptionReceiver mDecryptionReceiver;
 
-    private Socks5ProcessStatus status = Socks5ProcessStatus.HELLO;
-    private boolean serverMode = false;
+    private Socks5ProcessStatus mStatus = Socks5ProcessStatus.COMMAND;
+    private boolean mServerMode = false;
 
     public Socks5DecryptionReceiver(ISocks5ProcessListener listener) {
         if (listener == null) {
@@ -33,16 +33,16 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
     }
 
     public void setForwardModel() {
-        status = Socks5ProcessStatus.FORWARD;
+        mStatus = Socks5ProcessStatus.FORWARD;
     }
 
     public void setServerMode() {
-        this.serverMode = true;
+        this.mServerMode = true;
     }
 
     @Override
     public void onDecryption(byte[] decrypt) {
-        if (status == Socks5ProcessStatus.HELLO) {
+        if (mStatus == Socks5ProcessStatus.COMMAND) {
             int index = 0;
             int hostLength = decrypt[index];
             index++;
@@ -56,10 +56,10 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
             //切换数据tag
             mDecryptionReceiver.setDecodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
             //改变状态为中转状态
-            status = Socks5ProcessStatus.FORWARD;
-        } else if (status == Socks5ProcessStatus.FORWARD) {
+            mStatus = Socks5ProcessStatus.FORWARD;
+        } else if (mStatus == Socks5ProcessStatus.FORWARD) {
             //中转状态直接回调数据
-            if (serverMode) {
+            if (mServerMode) {
                 mListener.onUpstreamData(decrypt);
             } else {
                 mListener.onDownStreamData(decrypt);

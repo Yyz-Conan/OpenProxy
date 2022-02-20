@@ -189,8 +189,8 @@ public class Socks5Generator {
         byte[] addressBytes = address.getBytes();
         payload.write((byte) addressBytes.length);
         payload.write(addressBytes);
-        payload.write((byte) (((port & 0XFF00) >> 8)));
-        payload.write((byte) (port & 0XFF));
+        payload.write((byte) (((port & 0xff00) >> 8)));
+        payload.write((byte) (port & 0xff));
         return payload.toByteArray();
     }
 }

@@ -10,8 +10,6 @@ import java.util.List;
 
 public class ProxyFilterManager {
 
-    private static ProxyFilterManager proxyFilterManager;
-
     private String tableFile = null;
     private volatile List<String> proxyList;
     private volatile List<String> localList;
@@ -21,15 +19,13 @@ public class ProxyFilterManager {
         localList = new ArrayList<>();
     }
 
+    private static class Inner {
+        public static final ProxyFilterManager sInstance = new ProxyFilterManager();
+    }
+
+
     public static ProxyFilterManager getInstance() {
-        if (proxyFilterManager == null) {
-            synchronized (ProxyFilterManager.class) {
-                if (proxyFilterManager == null) {
-                    proxyFilterManager = new ProxyFilterManager();
-                }
-            }
-        }
-        return proxyFilterManager;
+        return Inner.sInstance;
     }
 
     public void loadProxyTable(String tableFile) {
@@ -68,7 +64,7 @@ public class ProxyFilterManager {
         if (StringEnvoy.isEmpty(host)) {
             return;
         }
-        synchronized (proxyFilterManager) {
+        synchronized (Inner.class) {
             host = host.replace("www.", "");
             boolean isHas = proxyList.contains(host);
             boolean localHas = localList.contains(host);
@@ -84,7 +80,7 @@ public class ProxyFilterManager {
         if (StringEnvoy.isEmpty(host)) {
             return false;
         }
-        synchronized (proxyFilterManager) {
+        synchronized (Inner.class) {
             for (String tmp : localList) {
                 if (host.contains(tmp)) {
                     return true;
@@ -98,7 +94,7 @@ public class ProxyFilterManager {
         if (StringEnvoy.isEmpty(host)) {
             return false;
         }
-        synchronized (proxyFilterManager) {
+        synchronized (Inner.class) {
             for (String tmp : proxyList) {
                 if (host.contains(tmp)) {
                     return true;

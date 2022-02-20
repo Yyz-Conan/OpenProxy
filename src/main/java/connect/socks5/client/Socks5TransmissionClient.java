@@ -10,7 +10,6 @@ import connect.network.nio.NioSender;
 import connect.network.xhttp.utils.MultiLevelBuf;
 import connect.socks5.Socks5DecryptionReceiver;
 import protocol.DataPacketTag;
-import protocol.HtmlGenerator;
 
 import java.nio.channels.SocketChannel;
 
@@ -46,12 +45,6 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         this.mRealPort = realPort;
         initCryption();
         sendRealTargetInfo(realHost, realPort);
-//        enableProxy();
-    }
-
-    private void enableProxy() {
-        byte[] data = HtmlGenerator.httpsTunnelEstablished();
-        mListener.onDownStreamData(data);
     }
 
     public String getRealHost() {

@@ -13,9 +13,11 @@ public class AESDataEnvoy {
 
     private final byte[] DEFAULT_KEY = "fD*HYc|/c;d309~p".getBytes();
 
-    private static AESDataEnvoy aesDataEnvoy;
-
     private Cipher cipher;
+
+    private static class Inner {
+        public static final AESDataEnvoy sInstance = new AESDataEnvoy();
+    }
 
     private AESDataEnvoy() {
         try {
@@ -26,16 +28,7 @@ public class AESDataEnvoy {
     }
 
     public static AESDataEnvoy getInstance() {
-        if (aesDataEnvoy == null) {
-            synchronized (AESDataEnvoy.class) {
-                if (aesDataEnvoy == null) {
-                    synchronized (AESDataEnvoy.class) {
-                        aesDataEnvoy = new AESDataEnvoy();
-                    }
-                }
-            }
-        }
-        return aesDataEnvoy;
+        return Inner.sInstance;
     }
 
     public byte[] encrypt(byte[] raw) {

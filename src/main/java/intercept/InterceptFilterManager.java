@@ -9,21 +9,17 @@ import java.util.List;
 public class InterceptFilterManager {
 
     private List<IInterceptFilter> proxyFilterList;
-    private static InterceptFilterManager proxyFilterManager = null;
 
     private InterceptFilterManager() {
         proxyFilterList = new ArrayList<>();
     }
 
+    private static class Inner {
+        public static final InterceptFilterManager sInstance = new InterceptFilterManager();
+    }
+
     public static InterceptFilterManager getInstance() {
-        if (proxyFilterManager == null) {
-            synchronized (InterceptFilterManager.class) {
-                if (proxyFilterManager == null) {
-                    proxyFilterManager = new InterceptFilterManager();
-                }
-            }
-        }
-        return proxyFilterManager;
+        return Inner.sInstance;
     }
 
     public void addFilter(IInterceptFilter filter) {

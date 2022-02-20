@@ -19,41 +19,41 @@ import java.util.List;
  */
 public class Socks5Receiver {
 
-    private CoreReceiver receiver;
-    private ISocks5ProcessListener listener;
-    private Socks5ProcessStatus status = Socks5ProcessStatus.HELLO;
+    private CoreReceiver mReceiver;
+    private ISocks5ProcessListener mListener;
+    private Socks5ProcessStatus mStatus = Socks5ProcessStatus.HELLO;
+    private Socks5Generator.Socks5Verification mChoiceMethod;
 
     public Socks5Receiver(@NotNull ISocks5ProcessListener listener) {
-        this.listener = listener;
+        this.mListener = listener;
         if (listener == null) {
             throw new NullPointerException("Socks5Receiver listener can not be null !!!");
         }
-        receiver = new CoreReceiver();
+        mReceiver = new CoreReceiver();
     }
 
     public CoreReceiver getReceiver() {
-        return receiver;
+        return mReceiver;
     }
 
     private class CoreReceiver extends NioReceiver implements INetReceiver<MultiLevelBuf> {
 
         @Override
         protected void onReadNetData(SocketChannel channel) throws Throwable {
-            Socks5Generator.Socks5Verification choiceMethod = consultCertification(channel);
+            consultCertification(channel);
+            checkUserInfo(channel);
             handleClientCommand(channel);
-            consultCertification(channel, choiceMethod);
-            if (status == Socks5ProcessStatus.FORWARD) {
-                setDataReceiver(this);
-                //socks5流程处理完毕，切换成中转处理方式，对数据不做任何处理
-                super.onReadNetData(channel);
-            }
+            forwardData(channel);
         }
 
-        private Socks5Generator.Socks5Verification consultCertification(SocketChannel channel) throws Throwable {
-            if (status != Socks5ProcessStatus.HELLO) {
-                return null;
+        private void consultCertification(SocketChannel channel) throws Throwable {
+            if (mStatus != Socks5ProcessStatus.HELLO) {
+                return;
             }
-            byte[] data = readChannel(channel, 2);
+            byte[] data = readChannel(channel, 2, true);
+            if (data == null) {
+                return;
+            }
             //VERSION SOCKS协议版本，目前固定0x05
             if (data[0] != Socks5Generator.VERSION) {
                 throw new RuntimeException("version must 0X05");
@@ -75,42 +75,32 @@ public class Socks5Receiver {
             }
             byte[] methodData = readChannel(channel, methodNum);
             List<Socks5Generator.Socks5Verification> clientSupportMethodList = Socks5Generator.Socks5Verification.convertToMethod(methodData);
-            Socks5Generator.Socks5Verification choiceMethod = listener.onClientSupportMethod(clientSupportMethodList);
-            status = Socks5ProcessStatus.VERIFICATION;
-            return choiceMethod;
+            mChoiceMethod = mListener.onClientSupportMethod(clientSupportMethodList);
+            mStatus = Socks5ProcessStatus.VERIFICATION;
         }
 
-        private void consultCertification(SocketChannel channel, Socks5Generator.Socks5Verification choiceMethod) throws Throwable {
-            if (status == Socks5ProcessStatus.VERIFICATION) {
-                if (choiceMethod == Socks5Generator.Socks5Verification.USERNAME_PASSWORD) {
-                    //选择了用户名和密码校验
-                    byte[] data = readChannel(channel, 2);
-                    if (data == null) {
-                        return;
-                    }
-                    int userNameLength = data[0];
-                    byte[] userName = readChannel(channel, userNameLength);
-                    data = readChannel(channel, 1);
-                    int passwordLength = data[0];
-                    byte[] password = readChannel(channel, passwordLength);
-                    boolean verification = listener.onVerification(new String(userName), new String(password));
-                    if (!verification) {
-                        throw new RuntimeException("username or password certification no pass !!!");
-                    }
+        private void checkUserInfo(SocketChannel channel) throws IOException {
+            if (mStatus != Socks5ProcessStatus.VERIFICATION) {
+                return;
+            }
+            if (mChoiceMethod == Socks5Generator.Socks5Verification.USERNAME_PASSWORD) {
+                //选择了用户名和密码校验
+                byte[] userData = readChannel(channel, 2, true);
+                if (userData == null) {
+                    return;
                 }
-                status = Socks5ProcessStatus.COMMAND;
+                int userNameLength = userData[0];
+                byte[] userName = readChannel(channel, userNameLength);
+                byte[] pwdData = readChannel(channel, 1);
+                int passwordLength = pwdData[0];
+                byte[] password = readChannel(channel, passwordLength);
+                boolean verification = mListener.onVerification(new String(userName), new String(password));
+                if (!verification) {
+                    throw new RuntimeException("username or password certification no pass !!!");
+                }
             }
-        }
-
-        private byte[] readChannel(SocketChannel channel, int size) throws IOException {
-            ByteBuffer data = ByteBuffer.allocate(size);
-            int ret = channel.read(data);
-            if (ret == -1) {
-                throw new SocketException("socket channel has error!!!");
-            } else if (ret == 0) {
-                return null;
-            }
-            return data.array();
+            mChoiceMethod = null;
+            mStatus = Socks5ProcessStatus.COMMAND;
         }
 
 
@@ -133,12 +123,12 @@ public class Socks5Receiver {
          * @throws Throwable
          */
         private void handleClientCommand(SocketChannel channel) throws Throwable {
-            if (status != Socks5ProcessStatus.COMMAND) {
+            if (mStatus != Socks5ProcessStatus.COMMAND) {
                 return;
             }
 
             // 接收客户端命令
-            byte[] data = readChannel(channel, 4);
+            byte[] data = readChannel(channel, 4, true);
             if (data == null) {
                 return;
             }
@@ -148,7 +138,7 @@ public class Socks5Receiver {
             Socks5Generator.Socks5Command command = Socks5Generator.Socks5Command.convertToCmd(data[1]);
             if (command == null) {
                 // 不支持的命令
-                listener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.COMMAND_NOT_SUPPORTED);
+                mListener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.COMMAND_NOT_SUPPORTED);
                 throw new RuntimeException("not supported command");
             }
             int rsv = data[2];
@@ -158,7 +148,7 @@ public class Socks5Receiver {
             Socks5Generator.Socks5AddressType addressType = Socks5Generator.Socks5AddressType.convertToAddressType(data[3]);
             if (addressType == null) {
                 // 不支持的地址类型
-                listener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.ADDRESS_TYPE_NOT_SUPPORTED);
+                mListener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.ADDRESS_TYPE_NOT_SUPPORTED);
                 throw new RuntimeException("address type not supported");
             }
 
@@ -186,15 +176,47 @@ public class Socks5Receiver {
             // 响应客户端发送的命令，暂时只实现CONNECT命令
             switch (command) {
                 case CONNECT:
-                    listener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.SUCCEEDED);
-                    listener.onBeginProxy(targetAddress, targetPort);
-                    status = Socks5ProcessStatus.FORWARD;
+                    mListener.onBeginProxy(targetAddress, targetPort);
+                    mListener.onReportCommandStatus(Socks5Generator.Socks5CommandStatus.SUCCEEDED);
+                    setDataReceiver(this);
+                    mStatus = Socks5ProcessStatus.FORWARD;
                     break;
                 case BIND:
                     throw new RuntimeException("not support command BIND");
                 case UDP_ASSOCIATE:
                     throw new RuntimeException("not support command UDP_ASSOCIATE");
             }
+        }
+
+
+        private void forwardData(SocketChannel channel) throws Throwable {
+            if (mStatus == Socks5ProcessStatus.FORWARD) {
+                //socks5流程处理完毕，切换成中转处理方式，对数据不做任何处理
+                super.onReadNetData(channel);
+            }
+        }
+
+        private byte[] readChannel(SocketChannel channel, int size) throws IOException {
+            return readChannel(channel, size, false);
+        }
+
+        private byte[] readChannel(SocketChannel channel, int size, boolean isCanRetZero) throws IOException {
+            ByteBuffer data = ByteBuffer.allocate(size);
+            do {
+                int ret = channel.read(data);
+                if (ret < 0) {
+                    throw new SocketException("socket channel has error!!!");
+                } else if (ret == 0) {
+                    if (isCanRetZero) {
+                        return null;
+                    } else {
+                        throw new SocketException("socket channel has error!!!");
+                    }
+                } else {
+                    size -= ret;
+                }
+            } while (size > 0);
+            return data.array();
         }
 
         // convert ip address from 4 byte to string
@@ -205,12 +227,13 @@ public class Socks5Receiver {
 
         /**
          * 直接中转数据
+         *
          * @param multiLevelBuf
          * @param throwable
          */
         @Override
         public void onReceiveFullData(MultiLevelBuf multiLevelBuf, Throwable throwable) {
-            listener.onUpstreamData(multiLevelBuf);
+            mListener.onUpstreamData(multiLevelBuf);
         }
     }
 }

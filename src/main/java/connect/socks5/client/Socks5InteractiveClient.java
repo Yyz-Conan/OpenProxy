@@ -67,15 +67,15 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
             sender.setSenderFeedback(this);
             setSender(sender);
         }
-        LogDog.d("<-x_proxy_socks5-> Socks5LocalClient has connect " + " [ connect count = " + Socks5Server.localConnectCount.incrementAndGet() + " ] ");
+        LogDog.d("<-proxy_socks5-> Socks5InteractiveClient has connect " + " [ connect count = " + Socks5Server.localConnectCount.incrementAndGet() + " ] ");
     }
 
     @Override
     protected void onCloseClientChannel() {
         if (transmissionClient != null) {
-            LogDog.d("<-x_proxy_socks5-> Socks5LocalClient close host =  " + transmissionClient.getRealHost() + ":" + transmissionClient.getRealPort());
+            LogDog.d("<-proxy_socks5-> Socks5InteractiveClient close host =  " + transmissionClient.getRealHost() + ":" + transmissionClient.getRealPort());
         }
-        LogDog.d("<-x_proxy_socks5-> Socks5LocalClient has close " + " [ connect count = " + Socks5Server.localConnectCount.decrementAndGet() + " ] ");
+        LogDog.d("<-proxy_socks5-> Socks5InteractiveClient has close " + " [ connect count = " + Socks5Server.localConnectCount.decrementAndGet() + " ] ");
         Socks5NetFactory.getFactory().removeTask(transmissionClient);
     }
 
@@ -90,7 +90,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     @Override
     public boolean onVerification(String userName, String password) {
         //响应通过校验
-        LogDog.d("<-x_proxy_socks5-> Socks5LocalClient verification client userName = " + userName + " password = " + password);
+        LogDog.d("<-proxy_socks5-> Socks5InteractiveClient verification client userName = " + userName + " password = " + password);
         getSender().sendData(Socks5Generator.buildVerVerificationResponse());
         return true;
     }
@@ -108,13 +108,14 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
 
     @Override
     public void onBeginProxy(String targetAddress, int targetPort) {
-        LogDog.d("<-x_proxy_socks5-> Socks5LocalClient proxy client address = " + targetAddress + " port = " + targetPort);
+        LogDog.d("<-proxy_socks5-> Socks5InteractiveClient proxy client address = " + targetAddress + " port = " + targetPort);
         boolean isNeedProxy = allowProxy;
         targetPort = targetPort <= 0 ? 80 : targetPort;
         if (enableSocks5Proxy && !isServerMode && !allowProxy) {
             isNeedProxy = ProxyFilterManager.getInstance().isNeedProxy(targetAddress);
         }
         if (enableSocks5Proxy && !isServerMode && isNeedProxy) {
+            LogDog.d("<-proxy_socks5-> Socks5InteractiveClient need transmission !!!");
             //当前开启代理，而且是客户端模式,连接远程代理服务,数据经过加密（非socks5格式数据）
             transmissionClient = new Socks5TransmissionClient(this, targetAddress, targetPort);
             //获取配置数据,连接代理服务端
@@ -139,6 +140,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     public void onUpstreamData(Object buf) {
         //如果是服务端模式,则把数据发给真实目录服务端
         transmissionClient.getSender().sendData(buf);
+        LogDog.d("<-proxy_socks5-> Socks5InteractiveClient onUpstreamData !");
     }
 
     /**

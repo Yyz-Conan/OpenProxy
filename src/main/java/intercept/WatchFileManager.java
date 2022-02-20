@@ -16,7 +16,6 @@ public class WatchFileManager extends BaseLoopTask {
     private WatchService watchService;
     private List<IWatchFileChangeListener> listenerList;
 
-    private static WatchFileManager watchConfigFileTask;
     private ITaskContainer container;
 
 
@@ -30,21 +29,18 @@ public class WatchFileManager extends BaseLoopTask {
         }
     }
 
+    private static class Inner {
+        public static final WatchFileManager sInstance = new WatchFileManager();
+    }
+
+
     public static WatchFileManager getInstance() throws IllegalStateException {
-        if (watchConfigFileTask == null) {
-            synchronized (WatchFileManager.class) {
-                if (watchConfigFileTask == null) {
-                    watchConfigFileTask = new WatchFileManager();
-                }
-            }
-        }
-        return watchConfigFileTask;
+        return Inner.sInstance;
     }
 
     public void destroy() {
         if (container != null) {
             TaskExecutorPoolManager.getInstance().destroy(container);
-            watchConfigFileTask = null;
             container = null;
         }
         if (watchService != null) {

@@ -32,27 +32,21 @@ public class RSADataEnvoy {
     //"RSA/ECB/OAEPWITHSHA-512ANDMGF1PADDING"
     private static final String RSA_ALGORITHM = "RSA";
     private final static String CYPHER = "RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING";
-    private static RSADataEnvoy dataPolicy = null;
 
     private static final int MAX_ENCRYPT_BLOCK = 117;
     private static final int MAX_DECRYPT_BLOCK = 128;
     private static final int keySize = 1024;
 
+
+    private static class Inner {
+        public static final RSADataEnvoy sInstance = new RSADataEnvoy();
+    }
+
     public static RSADataEnvoy getInstance() {
-        synchronized (RSADataEnvoy.class) {
-            if (dataPolicy == null) {
-                synchronized (RSADataEnvoy.class) {
-                    if (dataPolicy == null) {
-                        dataPolicy = new RSADataEnvoy();
-                    }
-                }
-            }
-        }
-        return dataPolicy;
+        return Inner.sInstance;
     }
 
     private RSADataEnvoy() {
-
     }
 
     public void init(String pubicKeyPath, String privateKeyPath) {

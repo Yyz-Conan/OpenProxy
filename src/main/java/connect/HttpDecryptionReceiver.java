@@ -4,9 +4,10 @@ import connect.joggle.IDecryptionDataListener;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
 import connect.network.nio.NioReceiver;
+import connect.network.xhttp.entity.XHttpDecoderStatus;
 import connect.network.xhttp.entity.XReceiverMode;
-import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import connect.network.xhttp.utils.XHttpDecoderProcessor;
 import protocol.DataPacketTag;
 import utils.RequestHelper;
@@ -73,30 +74,37 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
     @Override
     public void onDecryption(byte[] decrypt) {
         if (httpDecoder.getMode() == XReceiverMode.REQUEST) {
-            httpDecoder.onHttpReceive(decrypt, decrypt.length, null);
+            httpDecoder.decoderData(decrypt, decrypt.length);
         } else {
             localSender.sendData(decrypt);
         }
     }
 
 
-    private class CoreHttpDecoderProcessor extends XHttpDecoderProcessor {
+    private class CoreHttpDecoderProcessor extends XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
+
+        private INetReceiver<XResponse> mOutReceiver;
+        private Throwable mThrowable;
 
         @Override
-        protected void onStatusChange(XReceiverStatus status) {
-            if (status == XReceiverStatus.NONE) {
+        protected void onStatusChange(XHttpDecoderStatus status) {
+            if (status == XHttpDecoderStatus.OVER) {
                 //当前是循环完整个流程
+                if (mOutReceiver != null) {
+                    mOutReceiver.onReceiveFullData(getResponse(), mThrowable);
+                    mThrowable = null;
+                }
+                reset();
                 isFirstRequest = false;
             }
         }
 
-
         @Override
-        protected void onRequest(byte[] data, int len, Throwable e) {
+        protected void onRequest(byte[] data, int len) {
             if (data != null) {
                 if (isFirstRequest || !isTLS || RequestHelper.isRequest(data)) {
                     //当前状态是第一次接收到数据或者非https请求
-                    super.onRequest(data, len, e);
+                    super.onRequest(data, len);
                 } else {
                     //当前状态是https请求或者走代理请求
                     remoteSender.sendData(data);
@@ -105,8 +113,19 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
         }
 
         @Override
-        protected void onHttpReceive(byte[] data, int len, Throwable e) {
-            super.onHttpReceive(data, len, e);
+        public void onReceiveFullData(MultiLevelBuf buf, Throwable throwable) {
+            byte[] data = buf.array();
+            decryptionReceiver.resetMultilevelBuf(buf);
+            if (data == null) {
+                return;
+            }
+            decoderData(data, data.length);
+            this.mThrowable = throwable;
+        }
+
+
+        public void setDataReceiver(INetReceiver<XResponse> receiver) {
+            mOutReceiver = receiver;
         }
     }
 

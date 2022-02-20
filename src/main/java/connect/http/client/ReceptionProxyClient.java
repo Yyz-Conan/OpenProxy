@@ -41,6 +41,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
     private boolean isEnableProxy;
     private boolean allowProxy;
 
+
     public ReceptionProxyClient(SocketChannel channel) {
         super(channel, null);
 
@@ -68,7 +69,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
     @Override
     protected void onConnectCompleteChannel(SocketChannel channel) {
         super.onConnectCompleteChannel(channel);
-        getSender().setChannel(selectionKey, channel);
+        getSender().setChannel(mSelectionKey, channel);
         if (isDebug) {
             SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), "onConnectCompleteChannel");
         }
@@ -83,7 +84,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
                 SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
             }
             byte[] data = response.getRawData().toByteArray();
-            if (data != null && data.length > 0) {
+            if (data.length > 0) {
                 LogDog.d("==>browser heartbeat data = " + new String(data));
             }
             NioClientFactory.getFactory().removeTask(ReceptionProxyClient.this);

@@ -61,7 +61,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     @Override
     protected void onConnectCompleteChannel(SocketChannel channel) {
         LogDog.d("==================== connect success ============================");
-        getSender().setChannel(selectionKey, channel);
+        getSender().setChannel(mSelectionKey, channel);
         if (currentVersion > 0) {
             //send update protocol head
             getSender().sendData(DataPacketTag.PACK_UPDATE_TAG);
