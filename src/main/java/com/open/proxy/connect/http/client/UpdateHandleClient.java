@@ -6,13 +6,14 @@ import com.currency.net.base.joggle.ISenderFeedback;
 import com.currency.net.nio.NioClientFactory;
 import com.currency.net.nio.NioClientTask;
 import com.currency.net.nio.NioSender;
-import com.open.proxy.ConfigKey;
+import com.open.proxy.IConfigKey;
+import com.open.proxy.OPContext;
 import com.open.proxy.connect.UpdateDecoderReceiver;
 import com.open.proxy.connect.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.connect.joggle.IUpdateConfirmCallBack;
-import log.LogDog;
 import com.open.proxy.protocol.DataPacketTag;
-import util.AnalysisConfig;
+import log.LogDog;
+import util.ConfigFileEnvoy;
 import util.StringEnvoy;
 import util.TypeConversion;
 
@@ -22,7 +23,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.SocketChannel;
 import java.util.Enumeration;
-import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -32,7 +32,6 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     private String updateFilePath;
     private int currentVersion = 0;
     private String saveFile = "update.zip";
-    private String currentWorkDir;
 
     public UpdateHandleClient(String host, int port) {
         setAddress(host, port);
@@ -45,14 +44,13 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     }
 
     private void init(boolean isServerMode) {
-        Properties properties = System.getProperties();
-        currentWorkDir = properties.getProperty(ConfigKey.KEY_USER_DIR) + File.separator;
         UpdateDecoderReceiver receiver = new UpdateDecoderReceiver(this, this, isServerMode);
         setReceiver(receiver);
         NioSender sender = new NioSender();
         if (isServerMode) {
-            newVersion = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_NEW_VERSION);
-            updateFilePath = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_UPDATE_FILE_PATH);
+            ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+            newVersion = cFileEnvoy.getIntValue(IConfigKey.CONFIG_NEW_VERSION);
+            updateFilePath = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_FILE_PATH);
             sender.setSenderFeedback(this);
         }
         setSender(sender);
@@ -82,7 +80,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     }
 
     public void checkUpdate() {
-        this.currentVersion = ConfigKey.currentVersion;
+        this.currentVersion = IConfigKey.currentVersion;
     }
 
     @Override
@@ -162,7 +160,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
 
     @Override
     public String getSaveFile() {
-        return currentWorkDir + saveFile;
+        return OPContext.getInstance().getCurrentWorkDir() + saveFile;
     }
 
 
@@ -182,7 +180,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 FileOutputStream out = null;
                 try {
                     in = zipFile.getInputStream(entry);
-                    out = new FileOutputStream(currentWorkDir + zipEntryName);
+                    out = new FileOutputStream(OPContext.getInstance().getCurrentWorkDir() + zipEntryName);
                     do {
                         len = in.read(tmpBuf);
                         if (len > 0) {

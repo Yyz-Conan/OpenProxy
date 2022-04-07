@@ -1,6 +1,6 @@
 package com.open.proxy.intercept.joggle;
 
-public interface IWatchFileChangeListener {
+public interface IFileChangeWatch {
 
     String getTargetFile();
 

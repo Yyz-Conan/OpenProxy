@@ -1,9 +1,10 @@
 package com.open.proxy.cryption;
 
-import com.open.proxy.ConfigKey;
+import com.open.proxy.IConfigKey;
+import com.open.proxy.OPContext;
 import com.open.proxy.cryption.joggle.IDecryptTransform;
 import com.open.proxy.cryption.joggle.IEncryptTransform;
-import util.AnalysisConfig;
+import util.ConfigFileEnvoy;
 
 public class DataSafeManager {
 
@@ -19,7 +20,8 @@ public class DataSafeManager {
     private IEncryptTransform encryptTransform = null;
 
     public void init() {
-        String encryption = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_ENCRYPTION_MODE);
+        ConfigFileEnvoy configFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        String encryption = configFileEnvoy.getValue(IConfigKey.CONFIG_ENCRYPTION_MODE);
         if (EncryptionType.RSA.name().equals(encryption)) {
             decryptTransform = new RSADecrypt();
             encryptTransform = new RSAEncrypt();

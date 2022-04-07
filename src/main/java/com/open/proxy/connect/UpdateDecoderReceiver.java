@@ -5,8 +5,8 @@ import com.currency.net.base.SocketChannelCloseException;
 import com.currency.net.nio.NioReceiver;
 import com.open.proxy.connect.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.connect.joggle.IUpdateConfirmCallBack;
-import log.LogDog;
 import com.open.proxy.protocol.DataPacketTag;
+import log.LogDog;
 import util.IoEnvoy;
 import util.TypeConversion;
 

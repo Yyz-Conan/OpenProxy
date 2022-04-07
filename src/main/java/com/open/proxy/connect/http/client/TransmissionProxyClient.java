@@ -6,15 +6,16 @@ import com.currency.net.nio.NioReceiver;
 import com.currency.net.nio.NioSender;
 import com.currency.net.xhttp.entity.XResponse;
 import com.currency.net.xhttp.utils.ByteCacheStream;
-import com.open.proxy.ConfigKey;
+import com.open.proxy.IConfigKey;
+import com.open.proxy.OPContext;
 import com.open.proxy.connect.AbsClient;
 import com.open.proxy.connect.EncryptionSender;
 import com.open.proxy.connect.HttpDecryptionReceiver;
-import log.LogDog;
 import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.protocol.HtmlGenerator;
+import log.LogDog;
 import track.SpiderEnvoy;
-import util.AnalysisConfig;
+import util.ConfigFileEnvoy;
 import util.StringEnvoy;
 
 import java.nio.channels.SocketChannel;
@@ -24,7 +25,6 @@ import java.nio.channels.SocketChannel;
  */
 public class TransmissionProxyClient extends AbsClient implements INetReceiver<MultiByteBuffer> {
 
-    private boolean isDebug;
     private byte[] mConnectData;
     private String mRealHost = null;
     private NioSender mReceptionSender;
@@ -44,10 +44,10 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
         this.mReceptionReceiver = receiver;
         ByteCacheStream raw = response.getRawData();
         mConnectData = raw.toByteArray();
-        isDebug = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.KEY_DEBUG_MODE);
-        if (isDebug) {
-            SpiderEnvoy.getInstance().startWatchKey(TransmissionProxyClient.this.toString());
-        }
+        ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        boolean isDebug = cFileEnvoy.getBooleanValue(IConfigKey.KEY_DEBUG_MODE);
+        SpiderEnvoy.getInstance().setEnablePrint(isDebug);
+        SpiderEnvoy.getInstance().startWatchKey(TransmissionProxyClient.this.toString());
     }
 
     public void enableLocalConnect(String host, int port) {
@@ -56,8 +56,9 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
 
     public void enableProxyConnect(String realHost) {
         this.mRealHost = realHost;
-        String remoteHost = AnalysisConfig.getInstance().getValue(ConfigKey.CONFIG_REMOTE_PROXY_HOST);
-        int remotePort = AnalysisConfig.getInstance().getIntValue(ConfigKey.CONFIG_REMOTE_PROXY_PORT);
+        ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        String remoteHost = cFileEnvoy.getValue(IConfigKey.CONFIG_REMOTE_PROXY_HOST);
+        int remotePort = cFileEnvoy.getIntValue(IConfigKey.CONFIG_REMOTE_PROXY_PORT);
         setAddress(remoteHost, remotePort);
     }
 
@@ -69,10 +70,8 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             receiver.setDataReceiver(this);
             setReceiver(receiver);
             setSender(new NioSender());
-            if (isDebug) {
-                SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
-                        "onBeReadyChannel :当前是走本地代理模式");
-            }
+            SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
+                    "onBeReadyChannel :当前是走本地代理模式");
         } else {
             //面向代理客户端
             HttpDecryptionReceiver receiver = new HttpDecryptionReceiver(true);
@@ -82,10 +81,8 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             EncryptionSender sender = new EncryptionSender(true);
             sender.setEncodeTag(DataPacketTag.PACK_PROXY_TAG);
             setSender(sender);
-            if (isDebug) {
-                SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
-                        "onBeReadyChannel :当前是走远程代理模式");
-            }
+            SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
+                    "onBeReadyChannel :当前是走远程代理模式");
         }
 
         getSender().setChannel(getSelectionKey(), channel);
@@ -96,9 +93,7 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
         if (StringEnvoy.isEmpty(mRealHost)) {
             //当前是https请求而且不走代理请求，则响应代理请求
             mReceptionSender.sendData(HtmlGenerator.httpsTunnelEstablished());
-            if (isDebug) {
-                SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(), "返回CONNECT 响应");
-            }
+            SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(), "返回CONNECT 响应");
         } else {
             getSender().sendData(mConnectData);
             mConnectData = null;
@@ -119,10 +114,8 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
     protected void onErrorChannel(Throwable throwable) {
         //链接失败，如果不是配置强制不走代理则尝试代理链接
         LogDog.e("==> TransmissionProxyClient connection failed,  host = " + getHost() + ":" + getPort());
-        if (isDebug) {
-            SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
-                    "onConnectError host = " + getHost() + ":" + getPort());
-        }
+        SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(),
+                "onConnectError host = " + getHost() + ":" + getPort());
     }
 
 
@@ -132,10 +125,8 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             mCloseListener.onClientClose(mRealHost);
         }
         LogDog.e("==> TransmissionProxyClient connection close,  host = " + getHost() + ":" + getPort());
-        if (isDebug) {
-            String report = SpiderEnvoy.getInstance().endWatchKey(TransmissionProxyClient.this.toString());
-            LogDog.saveLog(report);
-        }
+        String report = SpiderEnvoy.getInstance().endWatchKey(TransmissionProxyClient.this.toString());
+        LogDog.saveLog(report);
     }
 
 }

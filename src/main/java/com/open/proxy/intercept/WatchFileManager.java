@@ -1,6 +1,6 @@
 package com.open.proxy.intercept;
 
-import com.open.proxy.intercept.joggle.IWatchFileChangeListener;
+import com.open.proxy.intercept.joggle.IFileChangeWatch;
 import log.LogDog;
 import task.executor.LoopTask;
 import task.executor.TaskContainer;
@@ -13,7 +13,7 @@ import java.util.List;
 
 public class WatchFileManager extends LoopTask {
     private WatchService mWatchService;
-    private List<IWatchFileChangeListener> mListenerList;
+    private List<IFileChangeWatch> mListenerList;
 
     private static WatchFileManager sWatchConfigFileTask;
     private TaskContainer mContainer;
@@ -57,7 +57,7 @@ public class WatchFileManager extends LoopTask {
         }
     }
 
-    public void addWatchFile(IWatchFileChangeListener listener) {
+    public void addWatchFile(IFileChangeWatch listener) {
         if (mWatchService != null) {
             mListenerList.add(listener);
             String targetPath = listener.getTargetFile();
@@ -88,7 +88,7 @@ public class WatchFileManager extends LoopTask {
                 if (event.count() == 1) {
                     //文件内容发送改变
                     Path path = (Path) event.context();
-                    for (IWatchFileChangeListener listener : mListenerList) {
+                    for (IFileChangeWatch listener : mListenerList) {
                         listener.onTargetChange(path.toString());
                     }
                 }

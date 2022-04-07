@@ -3,11 +3,12 @@ package com.open.proxy.connect.http.server;
 
 import com.currency.net.nio.NioClientFactory;
 import com.currency.net.nio.NioServerTask;
-import com.open.proxy.ConfigKey;
+import com.open.proxy.IConfigKey;
+import com.open.proxy.OPContext;
 import com.open.proxy.connect.http.client.ReceptionProxyClient;
-import log.LogDog;
 import com.open.proxy.safety.IPBlackListManager;
-import util.AnalysisConfig;
+import log.LogDog;
+import util.ConfigFileEnvoy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -27,7 +28,8 @@ public class MultipleProxyServer extends NioServerTask {
     protected void onBeReadyChannel(ServerSocketChannel channel) {
         LogDog.d("==> Proxy server start success : " + getHost() + ":" + getPort());
         NioClientFactory.getFactory().open();
-        isEnableIPBlack = AnalysisConfig.getInstance().getBooleanValue(ConfigKey.CONFIG_ENABLE_IP_BLACK);
+        ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        isEnableIPBlack = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_IP_BLACK);
     }
 
     @Override
