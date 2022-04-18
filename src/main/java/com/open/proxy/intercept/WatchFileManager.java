@@ -18,6 +18,9 @@ public class WatchFileManager extends LoopTask {
     private static WatchFileManager sWatchConfigFileTask;
     private TaskContainer mContainer;
 
+    private static class InnerClass {
+        private final static WatchFileManager sManager = new WatchFileManager();
+    }
 
     private WatchFileManager() throws IllegalStateException {
         mListenerList = new ArrayList<>();
@@ -31,14 +34,7 @@ public class WatchFileManager extends LoopTask {
     }
 
     public static WatchFileManager getInstance() throws IllegalStateException {
-        if (sWatchConfigFileTask == null) {
-            synchronized (WatchFileManager.class) {
-                if (sWatchConfigFileTask == null) {
-                    sWatchConfigFileTask = new WatchFileManager();
-                }
-            }
-        }
-        return sWatchConfigFileTask;
+        return InnerClass.sManager;
     }
 
     public void destroy() {
@@ -82,6 +78,7 @@ public class WatchFileManager extends LoopTask {
         try {
             key = mWatchService.take();
         } catch (Throwable e) {
+            e.printStackTrace();
         }
         if (key != null && key.isValid()) {
             for (WatchEvent<?> event : key.pollEvents()) {

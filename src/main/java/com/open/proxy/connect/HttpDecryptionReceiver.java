@@ -1,5 +1,6 @@
 package com.open.proxy.connect;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetReceiver;
 import com.currency.net.base.joggle.INetSender;
 import com.currency.net.entity.MultiByteBuffer;
@@ -72,7 +73,7 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
         if (httpDecoder.getMode() == XReceiverMode.REQUEST) {
             httpDecoder.onRequest(decrypt, decrypt.length);
         } else {
-            remoteSender.sendData(decrypt);
+            remoteSender.sendData(SendPacket.getInstance(decrypt));
         }
     }
 
@@ -105,7 +106,7 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
                     super.onRequest(data, len);
                 } else {
                     //当前状态非http的request请求体
-                    remoteSender.sendData(data);
+                    remoteSender.sendData(SendPacket.getInstance(data));
                 }
             }
         }

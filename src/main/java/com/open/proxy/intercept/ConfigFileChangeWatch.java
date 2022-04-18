@@ -1,6 +1,7 @@
 package com.open.proxy.intercept;
 
 import com.open.proxy.OPContext;
+import log.LogDog;
 import util.ConfigFileEnvoy;
 
 /**
@@ -20,6 +21,7 @@ public class ConfigFileChangeWatch extends BaseFileChangeWatch {
         if (targetFileName.equals(mFileName)) {
             ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
             cFileEnvoy.analysis(getTargetFile());
+            LogDog.d(getTargetFile() + " the configuration file has been modified !!! ");
         }
     }
 }

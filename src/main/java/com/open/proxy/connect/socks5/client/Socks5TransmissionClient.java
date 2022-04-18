@@ -1,5 +1,6 @@
 package com.open.proxy.connect.socks5.client;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetReceiver;
 import com.currency.net.entity.MultiByteBuffer;
 import com.currency.net.nio.NioReceiver;
@@ -51,7 +52,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
 
     private void enableProxy() {
         byte[] data = HtmlGenerator.httpsTunnelEstablished();
-        mListener.onDownStreamData(data);
+        mListener.onDownStreamData(SendPacket.getInstance(data));
     }
 
     public String getRealHost() {
@@ -59,7 +60,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
     }
 
     public int getRealPort() {
-        return mRealPort <= 0  ? getPort() : mRealPort;
+        return mRealPort <= 0 ? getPort() : mRealPort;
     }
 
     private void init() {
@@ -75,7 +76,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
     private void sendRealTargetInfo(String realHost, int realPort) {
         byte[] targetInfo = createTargetInfoProtocol(realHost, realPort);
         EncryptionSender sender = getSender();
-        sender.sendData(targetInfo);
+        sender.sendData(SendPacket.getInstance(targetInfo));
         //发送完hello数据,切换tag(PACK_SOCKS5_DATA_TAG)用于中转数据
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
     }
@@ -119,6 +120,6 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
 
     @Override
     public void onReceiveFullData(MultiByteBuffer buffer, Throwable throwable) {
-        mListener.onDownStreamData(buffer);
+        mListener.onDownStreamData(SendPacket.getInstance(buffer));
     }
 }

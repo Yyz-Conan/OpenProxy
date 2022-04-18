@@ -67,8 +67,7 @@ public class ProxyMain {
         InterceptFileChangeWatch fileWatch = new InterceptFileChangeWatch(envPath, interceptFileName);
         WatchFileManager.getInstance().addWatchFile(fileWatch);
         //添加监控cfg配置文件的修改
-        String configFileName = cFileEnvoy.getValue(IConfigKey.FILE_CONFIG);
-        ConfigFileChangeWatch cfgFileWatch = new ConfigFileChangeWatch(envPath, configFileName);
+        ConfigFileChangeWatch cfgFileWatch = new ConfigFileChangeWatch(envPath, IConfigKey.FILE_CONFIG);
         WatchFileManager.getInstance().addWatchFile(cfgFileWatch);
     }
 
@@ -84,7 +83,13 @@ public class ProxyMain {
     private static void initRSA() {
         String publicKey = OPContext.getInstance().getEnvFilePath(IConfigKey.FILE_PUBLIC_KEY);
         String privateKey = OPContext.getInstance().getEnvFilePath(IConfigKey.FILE_PRIVATE_KEY);
-        RSADataEnvoy.getInstance().init(publicKey, privateKey);
+        try {
+            RSADataEnvoy rsaDataEnvoy = new RSADataEnvoy();
+            rsaDataEnvoy.init(publicKey, privateKey);
+            OPContext.getInstance().setRsaDataEnvoy(rsaDataEnvoy);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static void startServer() {

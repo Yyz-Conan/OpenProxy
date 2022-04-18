@@ -1,5 +1,6 @@
 package com.open.proxy.intercept;
 
+import com.open.proxy.OPContext;
 import com.open.proxy.intercept.joggle.IInterceptFilter;
 import util.StringEnvoy;
 
@@ -9,21 +10,17 @@ import java.util.List;
 public class InterceptFilterManager {
 
     private List<IInterceptFilter> proxyFilterList;
-    private static InterceptFilterManager proxyFilterManager = null;
+
+    private static class InnerClass {
+        private final static InterceptFilterManager sManager = new InterceptFilterManager();
+    }
 
     private InterceptFilterManager() {
         proxyFilterList = new ArrayList<>();
     }
 
     public static InterceptFilterManager getInstance() {
-        if (proxyFilterManager == null) {
-            synchronized (InterceptFilterManager.class) {
-                if (proxyFilterManager == null) {
-                    proxyFilterManager = new InterceptFilterManager();
-                }
-            }
-        }
-        return proxyFilterManager;
+        return InnerClass.sManager;
     }
 
     public void addFilter(IInterceptFilter filter) {

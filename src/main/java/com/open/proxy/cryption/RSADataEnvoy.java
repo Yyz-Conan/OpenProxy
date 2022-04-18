@@ -4,6 +4,7 @@ import log.LogDog;
 import storage.FileHelper;
 
 import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.*;
@@ -23,9 +24,9 @@ public class RSADataEnvoy {
      */
     private RSAPrivateKey rsaPrivateKey;
 
-    private byte[] publicEncodedKey;
+//    private byte[] publicEncodedKey;
 
-    private byte[] privateEncodedKey;
+//    private byte[] privateEncodedKey;
 
     private Cipher cipher;
 
@@ -37,45 +38,29 @@ public class RSADataEnvoy {
     private static final int MAX_DECRYPT_BLOCK = 128;
     private static final int keySize = 1024;
 
-    private static final class InnerClass {
-        public static final RSADataEnvoy sInstance = new RSADataEnvoy();
-    }
-
-    public static RSADataEnvoy getInstance() {
-        return InnerClass.sInstance;
-    }
-
-    private RSADataEnvoy() {
-
-    }
-
-    public void init(String pubicKeyPath, String privateKeyPath) {
+    public void init(String pubicKeyPath, String privateKeyPath) throws NoSuchPaddingException, NoSuchAlgorithmException {
         loadPublicKey(pubicKeyPath);
         loadPrivateKey(privateKeyPath);
-        try {
-            if (rsaPublicKey == null || rsaPrivateKey == null) {
-                //初始化密钥
-                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
-                //密钥长度为64的整数倍，最大是65536
-                keyPairGenerator.initialize(keySize, new SecureRandom());
-                // 生成一个密钥对，保存在keyPair中
-                KeyPair keyPair = keyPairGenerator.generateKeyPair();
-                // 公钥
-                rsaPublicKey = (RSAPublicKey) keyPair.getPublic();
-                publicEncodedKey = rsaPublicKey.getEncoded();
-                // 私钥
-                rsaPrivateKey = (RSAPrivateKey) keyPair.getPrivate();
-                privateEncodedKey = rsaPrivateKey.getEncoded();
+        if (rsaPublicKey == null || rsaPrivateKey == null) {
+            //初始化密钥
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA_ALGORITHM);
+            //密钥长度为64的整数倍，最大是65536
+            keyPairGenerator.initialize(keySize, new SecureRandom());
+            // 生成一个密钥对，保存在keyPair中
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+            // 公钥
+            rsaPublicKey = (RSAPublicKey) keyPair.getPublic();
+//            publicEncodedKey = rsaPublicKey.getEncoded();
+            // 私钥
+            rsaPrivateKey = (RSAPrivateKey) keyPair.getPrivate();
+//            privateEncodedKey = rsaPrivateKey.getEncoded();
 
-                //保存公钥
-                savePublicKey(pubicKeyPath);
-                //保存私钥
-                savePrivateKey(privateKeyPath);
-            }
-            cipher = Cipher.getInstance(RSA_ALGORITHM);
-        } catch (Exception e) {
-            e.printStackTrace();
+            //保存公钥
+//            savePublicKey(pubicKeyPath);
+            //保存私钥
+//            savePrivateKey(privateKeyPath);
         }
+        cipher = Cipher.getInstance(RSA_ALGORITHM);
 //        System.out.println("RSA公钥：" + Base64Helper.getHelper().encodeToString(publicEncodedKey));
 //        System.out.println("RSA私钥：" + Base64Helper.getHelper().encodeToString(privateEncodedKey));
     }
@@ -249,7 +234,7 @@ public class RSADataEnvoy {
                 KeyFactory keyFactory = KeyFactory.getInstance(RSA_ALGORITHM);
                 X509EncodedKeySpec keySpec = new X509EncodedKeySpec(data);
                 rsaPublicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
-                publicEncodedKey = rsaPublicKey.getEncoded();
+//                publicEncodedKey = rsaPublicKey.getEncoded();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -263,19 +248,19 @@ public class RSADataEnvoy {
                 PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(data);
                 KeyFactory keyFactory = KeyFactory.getInstance(RSA_ALGORITHM);
                 rsaPrivateKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
-                privateEncodedKey = rsaPrivateKey.getEncoded();
+//                privateEncodedKey = rsaPrivateKey.getEncoded();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void savePublicKey(String savePath) {
-        FileHelper.writeFile(savePath, publicEncodedKey);
-    }
-
-    private void savePrivateKey(String savePath) {
-        FileHelper.writeFile(savePath, privateEncodedKey);
-    }
+//    private void savePublicKey(String savePath) {
+//        FileHelper.writeFile(savePath, publicEncodedKey);
+//    }
+//
+//    private void savePrivateKey(String savePath) {
+//        FileHelper.writeFile(savePath, privateEncodedKey);
+//    }
 
 }

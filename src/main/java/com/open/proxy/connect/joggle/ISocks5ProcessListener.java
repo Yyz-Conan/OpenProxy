@@ -1,5 +1,6 @@
 package com.open.proxy.connect.joggle;
 
+import com.currency.net.base.SendPacket;
 import com.open.proxy.protocol.Socks5Generator;
 
 import java.util.List;
@@ -40,14 +41,14 @@ public interface ISocks5ProcessListener {
     /**
      * 把远程服务或者真实目标服务数据回传给代理客户端
      *
-     * @param buf
+     * @param sendPacket
      */
-    void onDownStreamData(Object buf);
+    void onDownStreamData(SendPacket sendPacket);
 
     /**
      * 把代理客户端请求的数据中转发送给目标服务（远程代理服务或者真实目标服务）
      *
-     * @param buf
+     * @param sendPacket
      */
-    void onUpstreamData(Object buf);
+    void onUpstreamData(SendPacket sendPacket);
 }

@@ -1,6 +1,7 @@
 package com.open.proxy.connect;
 
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.entity.MultiByteBuffer;
 import com.currency.net.nio.NioSender;
 import com.open.proxy.cryption.DataSafeManager;
@@ -25,7 +26,8 @@ public class EncryptionSender extends NioSender {
     }
 
     @Override
-    public void sendData(Object objData) {
+    public void sendData(SendPacket sendPacket) {
+        Object objData = sendPacket.getSendData();
         if (mIsNeedEncryption) {
             if (objData instanceof MultiByteBuffer) {
                 MultiByteBuffer buf = (MultiByteBuffer) objData;
@@ -38,7 +40,7 @@ public class EncryptionSender extends NioSender {
                 sendEncryptData((byte[]) objData);
             }
         } else {
-            super.sendData(objData);
+            super.sendData(sendPacket);
         }
     }
 
@@ -46,14 +48,14 @@ public class EncryptionSender extends NioSender {
         byte[] encrypt = DataSafeManager.getInstance().encode(byteData);
         //send com.open.proxy.protocol head
         ByteBuffer tagData = ByteBuffer.wrap(mTag);
-        super.sendData(tagData);
+        super.sendData(SendPacket.getInstance(tagData));
         //send data length
         byte[] length = TypeConversion.intToByte(encrypt.length);
         ByteBuffer lengthData = ByteBuffer.wrap(length);
-        super.sendData(lengthData);
+        super.sendData(SendPacket.getInstance(lengthData));
         //send data
         ByteBuffer encryptData = ByteBuffer.wrap(encrypt);
-        super.sendData(encryptData);
+        super.sendData(SendPacket.getInstance(encryptData));
     }
 
 }

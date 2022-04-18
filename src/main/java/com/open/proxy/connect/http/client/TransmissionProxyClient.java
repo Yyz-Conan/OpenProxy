@@ -1,5 +1,6 @@
 package com.open.proxy.connect.http.client;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetReceiver;
 import com.currency.net.entity.MultiByteBuffer;
 import com.currency.net.nio.NioReceiver;
@@ -92,10 +93,10 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
 
         if (StringEnvoy.isEmpty(mRealHost)) {
             //当前是https请求而且不走代理请求，则响应代理请求
-            mReceptionSender.sendData(HtmlGenerator.httpsTunnelEstablished());
+            mReceptionSender.sendData(SendPacket.getInstance(HtmlGenerator.httpsTunnelEstablished()));
             SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(), "返回CONNECT 响应");
         } else {
-            getSender().sendData(mConnectData);
+            getSender().sendData(SendPacket.getInstance(mConnectData));
             mConnectData = null;
         }
     }
@@ -106,7 +107,7 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             LogDog.e("++> onReceiveException host = " + getHost() + ":" + getPort());
         }
         //对应NioReceiver
-        mReceptionSender.sendData(buf);
+        mReceptionSender.sendData(SendPacket.getInstance(buf));
     }
 
 

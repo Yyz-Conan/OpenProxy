@@ -1,6 +1,7 @@
 package com.open.proxy.connect.http.client;
 
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetSender;
 import com.currency.net.base.joggle.ISenderFeedback;
 import com.currency.net.nio.NioClientFactory;
@@ -63,10 +64,10 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         getSender().setChannel(getSelectionKey(), channel);
         if (currentVersion > 0) {
             //send update com.open.proxy.protocol head
-            getSender().sendData(DataPacketTag.PACK_UPDATE_TAG);
+            getSender().sendData(SendPacket.getInstance(DataPacketTag.PACK_UPDATE_TAG));
             //send data
             byte[] versionByte = TypeConversion.intToByte(currentVersion);
-            getSender().sendData(versionByte);
+            getSender().sendData(SendPacket.getInstance(versionByte));
         }
     }
 
@@ -88,10 +89,10 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         boolean isHasNewVersion = version < newVersion;
         //响应是否有新版本
         //send update com.open.proxy.protocol head
-        getSender().sendData(DataPacketTag.PACK_UPDATE_TAG);
+        getSender().sendData(SendPacket.getInstance(DataPacketTag.PACK_UPDATE_TAG));
         //send data
         byte[] countFileByte = TypeConversion.intToByte(isHasNewVersion ? 1 : 0);
-        getSender().sendData(countFileByte);
+        getSender().sendData(SendPacket.getInstance(countFileByte));
 
         if (isHasNewVersion && StringEnvoy.isNotEmpty(updateFilePath)) {
             File updateFile = new File(updateFilePath);
@@ -101,7 +102,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                     byte[] fileSizeByte = TypeConversion.long2Bytes(fileSize);
                     //响应更新文件大小
                     LogDog.d("==> send update file size to client !");
-                    getSender().sendData(fileSizeByte);
+                    getSender().sendData(SendPacket.getInstance(fileSizeByte));
                     //响应更新文件数据
                     LogDog.d("==> send update file to client !");
                     sendFileData(updateFile);
@@ -131,7 +132,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 long fileSize = fileChannel.size();
                 do {
                     MappedByteBuffer byteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, position, size);
-                    getSender().sendData(byteBuffer);
+                    getSender().sendData(SendPacket.getInstance(byteBuffer));
                     position += size;
                     if (fileSize - position < size) {
                         size = fileSize - position;

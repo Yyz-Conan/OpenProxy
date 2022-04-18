@@ -46,10 +46,9 @@ public class MultipleProxyServer extends NioServerTask {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-            } finally {
-                if (isBlack) {
-                    return;
-                }
+            }
+            if (isBlack) {
+                return;
             }
         }
 

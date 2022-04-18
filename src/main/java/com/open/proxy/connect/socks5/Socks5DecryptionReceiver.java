@@ -1,5 +1,6 @@
 package com.open.proxy.connect.socks5;
 
+import com.currency.net.base.SendPacket;
 import com.open.proxy.connect.DecryptionReceiver;
 import com.open.proxy.connect.joggle.IDecryptionDataListener;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
@@ -59,10 +60,11 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
             status = Socks5ProcessStatus.FORWARD;
         } else if (status == Socks5ProcessStatus.FORWARD) {
             //中转状态直接回调数据
+            SendPacket sendPacket = SendPacket.getInstance(decrypt);
             if (serverMode) {
-                mListener.onUpstreamData(decrypt);
+                mListener.onUpstreamData(sendPacket);
             } else {
-                mListener.onDownStreamData(decrypt);
+                mListener.onDownStreamData(sendPacket);
             }
         }
     }

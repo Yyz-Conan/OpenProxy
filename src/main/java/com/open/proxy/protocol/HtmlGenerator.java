@@ -7,10 +7,11 @@ public class HtmlGenerator {
 
     /**
      * https请求代理成功响应
+     *
      * @return
      */
     public static byte[] httpsTunnelEstablished() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 200 Connection established\r\n");
         sb.append("Proxy-agent: YYD-HttpProxy\r\n");
         sb.append("\r\n");
@@ -19,10 +20,11 @@ public class HtmlGenerator {
 
     /**
      * https请求代理失败响应
+     *
      * @return
      */
     public static byte[] headDenialService() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 503 Denial Service\r\n");
         sb.append("Proxy-agent: YYD-HttpProxy\r\n");
         sb.append("\r\n");
@@ -31,6 +33,7 @@ public class HtmlGenerator {
 
     /**
      * 响应请求拦截数据
+     *
      * @param interceptHost
      * @return
      */

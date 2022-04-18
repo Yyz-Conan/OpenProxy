@@ -1,5 +1,6 @@
 package com.open.proxy.connect.http.client;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetReceiver;
 import com.currency.net.base.joggle.INetSender;
 import com.currency.net.base.joggle.ISenderFeedback;
@@ -92,10 +93,10 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
 //            if (XResponseHelper.isTLS(response)) {
 //                getSender().sendData(HtmlGenerator.httpsTunnelEstablished());
 //            } else {
-            getSender().sendData(HtmlGenerator.headDenialService());
+            getSender().sendData(SendPacket.getInstance(HtmlGenerator.headDenialService()));
 //            }
             requestHost = newRequestHost;
-            getSender().sendData(HtmlGenerator.createInterceptHtml(newRequestHost));
+            getSender().sendData(SendPacket.getInstance(HtmlGenerator.createInterceptHtml(newRequestHost)));
 
             String msg = "newRequestHost in black menu";
             SpiderEnvoy.getInstance().pinKeyProbe(toString(), msg);
@@ -115,7 +116,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
             ByteCacheStream raw = response.getRawData();
             INetSender sender = transmissionProxyClient.getSender();
             if (sender != null) {
-                sender.sendData(raw.toByteArray());
+                sender.sendData(SendPacket.getInstance(raw.toByteArray()));
             }
             String msg = "multiplex curt proxy send data, newRequestHost = " + newRequestHost + " requestHost = " + requestHost;
             SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);

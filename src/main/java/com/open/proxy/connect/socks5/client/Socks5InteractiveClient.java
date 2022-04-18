@@ -1,5 +1,6 @@
 package com.open.proxy.connect.socks5.client;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OPContext;
@@ -86,7 +87,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     public Socks5Generator.Socks5Verification onClientSupportMethod(List<Socks5Generator.Socks5Verification> methods) {
         //响应不需要用户和密码验证
         Socks5Generator.Socks5Verification choiceMethod = methods.get(0);
-        getSender().sendData(Socks5Generator.buildVerVerificationMethodResponse(choiceMethod));
+        getSender().sendData(SendPacket.getInstance(Socks5Generator.buildVerVerificationMethodResponse(choiceMethod)));
         return choiceMethod;
     }
 
@@ -94,7 +95,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     public boolean onVerification(String userName, String password) {
         //响应通过校验
         LogDog.d("<-x_proxy_socks5-> Socks5LocalClient verification client userName = " + userName + " password = " + password);
-        getSender().sendData(Socks5Generator.buildVerVerificationResponse());
+        getSender().sendData(SendPacket.getInstance(Socks5Generator.buildVerVerificationResponse()));
         return true;
     }
 
@@ -103,7 +104,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
         try {
             byte[] response = Socks5Generator.buildCommandResponse(status.rangeStart,
                     Socks5Generator.Socks5AddressType.DOMAIN, getHost(), getPort());
-            getSender().sendData(response);
+            getSender().sendData(SendPacket.getInstance(response));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -137,22 +138,22 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     /**
      * 把代理客户端请求的数据中转发送给目标服务（远程代理服务或者真实目标服务）
      *
-     * @param buf
+     * @param sendPacket
      */
     @Override
-    public void onUpstreamData(Object buf) {
+    public void onUpstreamData(SendPacket sendPacket) {
         //如果是服务端模式,则把数据发给真实目录服务端
-        transmissionClient.getSender().sendData(buf);
+        transmissionClient.getSender().sendData(sendPacket);
     }
 
     /**
      * 把远程服务或者真实目标服务数据回传给代理客户端
      *
-     * @param buf
+     * @param sendPacket
      */
     @Override
-    public void onDownStreamData(Object buf) {
-        getSender().sendData(buf);
+    public void onDownStreamData(SendPacket sendPacket) {
+        getSender().sendData(sendPacket);
     }
 
     @Override
