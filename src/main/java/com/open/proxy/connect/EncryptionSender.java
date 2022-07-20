@@ -1,11 +1,11 @@
 package com.open.proxy.connect;
 
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.entity.MultiByteBuffer;
-import com.currency.net.nio.NioSender;
+import com.jav.common.util.TypeConversion;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioSender;
 import com.open.proxy.cryption.DataSafeManager;
-import util.TypeConversion;
+import com.open.proxy.cryption.joggle.EncryptionType;
 
 import java.nio.ByteBuffer;
 
@@ -15,10 +15,14 @@ import java.nio.ByteBuffer;
 public class EncryptionSender extends NioSender {
 
     private boolean mIsNeedEncryption;
+
+    private DataSafeManager mDataSafeManager;
     private byte[] mTag;
 
     public EncryptionSender(boolean isNeedDecryption) {
-        mIsNeedEncryption = isNeedDecryption && DataSafeManager.getInstance().isEnable();
+        mIsNeedEncryption = isNeedDecryption;
+        mDataSafeManager =  new DataSafeManager();
+        mDataSafeManager.init(EncryptionType.RSA);
     }
 
     public void setEncodeTag(byte[] tag) {
@@ -26,36 +30,30 @@ public class EncryptionSender extends NioSender {
     }
 
     @Override
-    public void sendData(SendPacket sendPacket) {
-        Object objData = sendPacket.getSendData();
+    public void sendData(MultiByteBuffer buffer) {
         if (mIsNeedEncryption) {
-            if (objData instanceof MultiByteBuffer) {
-                MultiByteBuffer buf = (MultiByteBuffer) objData;
-                buf.flip();
-                byte[] byteData = buf.array();
-                if (byteData != null) {
-                    sendEncryptData(byteData);
-                }
-            } else if (objData instanceof byte[]) {
-                sendEncryptData((byte[]) objData);
+//            buffer.flip();
+            byte[] byteData = buffer.array();
+            if (byteData != null) {
+                sendEncryptData(byteData);
             }
         } else {
-            super.sendData(sendPacket);
+            super.sendData(buffer);
         }
     }
 
     private void sendEncryptData(byte[] byteData) {
-        byte[] encrypt = DataSafeManager.getInstance().encode(byteData);
+        byte[] encrypt = mDataSafeManager.encode(byteData);
         //send com.open.proxy.protocol head
         ByteBuffer tagData = ByteBuffer.wrap(mTag);
-        super.sendData(SendPacket.getInstance(tagData));
+        super.sendData(new MultiByteBuffer(tagData));
         //send data length
         byte[] length = TypeConversion.intToByte(encrypt.length);
         ByteBuffer lengthData = ByteBuffer.wrap(length);
-        super.sendData(SendPacket.getInstance(lengthData));
+        super.sendData(new MultiByteBuffer(lengthData));
         //send data
         ByteBuffer encryptData = ByteBuffer.wrap(encrypt);
-        super.sendData(SendPacket.getInstance(encryptData));
+        super.sendData(new MultiByteBuffer(encryptData));
     }
 
 }

@@ -1,9 +1,9 @@
 package com.open.proxy.connect.socks5;
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.base.joggle.INetReceiver;
-import com.currency.net.entity.MultiByteBuffer;
-import com.currency.net.nio.NioReceiver;
+
+import com.jav.net.base.joggle.INetReceiver;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioReceiver;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
 import com.open.proxy.connect.joggle.Socks5ProcessStatus;
 import com.open.proxy.protocol.Socks5Generator;
@@ -211,7 +211,7 @@ public class Socks5Receiver {
          */
         @Override
         public void onReceiveFullData(MultiByteBuffer buffer, Throwable throwable) {
-            listener.onUpstreamData(SendPacket.getInstance(buffer));
+            listener.onUpstreamData(buffer);
         }
     }
 }

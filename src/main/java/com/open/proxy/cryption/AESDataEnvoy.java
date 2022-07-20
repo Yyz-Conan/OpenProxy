@@ -13,9 +13,11 @@ public class AESDataEnvoy {
 
     private final byte[] DEFAULT_KEY = "fD*HYc|/c;d309~p".getBytes();
 
+    private byte[] mConfigKey = null;
+
     private Cipher cipher;
 
-    private AESDataEnvoy() {
+    public AESDataEnvoy() {
         try {
             cipher = Cipher.getInstance(CYPHER);
         } catch (Exception e) {
@@ -23,16 +25,16 @@ public class AESDataEnvoy {
         }
     }
 
-    private static final class InnerClass {
-        public static final AESDataEnvoy sInstance = new AESDataEnvoy();
-    }
-
-    public static AESDataEnvoy getInstance() {
-        return InnerClass.sInstance;
+    public void initKey(byte[] key) {
+        mConfigKey = key;
     }
 
     public byte[] encrypt(byte[] raw) {
-        return encrypt(raw, DEFAULT_KEY);
+        byte[] key = DEFAULT_KEY;
+        if (mConfigKey != null) {
+            key = mConfigKey;
+        }
+        return encrypt(raw, key);
     }
 
     public byte[] encrypt(byte[] raw, byte[] key) {
@@ -55,7 +57,11 @@ public class AESDataEnvoy {
     }
 
     public byte[] decrypt(byte[] encrypt) {
-        return decrypt(encrypt, DEFAULT_KEY);
+        byte[] key = DEFAULT_KEY;
+        if (mConfigKey != null) {
+            key = mConfigKey;
+        }
+        return decrypt(encrypt, key);
     }
 
     public byte[] decrypt(byte[] encrypt, byte[] key) {

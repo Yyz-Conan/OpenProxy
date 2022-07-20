@@ -1,5 +1,7 @@
 package com.open.proxy.protocol.security;
 
+import com.open.proxy.cryption.joggle.IEncryptComponent;
+
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 
@@ -78,14 +80,9 @@ public abstract class ProxyProtocol {
     private byte mEnType;
 
     /**
-     * 随机code，服务端返回(32Byte)
-     */
-    private byte[] randomCode;
-
-    /**
      * 请求id，区分http请求的链路
      */
-    private short requestId;
+    private byte[] requestId;
 
     /**
      * 用于udp记录包的顺序,最大255个包，超出服务器会重置
@@ -118,11 +115,7 @@ public abstract class ProxyProtocol {
         return mByteMachine;
     }
 
-    protected byte[] randomCode() {
-        return randomCode;
-    }
-
-    protected short requestId() {
+    protected byte[] requestId() {
         return requestId;
     }
 
@@ -146,12 +139,8 @@ public abstract class ProxyProtocol {
         this.mEnType = mEnType;
     }
 
-    public void setRequestId(short requestId) {
+    public void setRequestId(byte[] requestId) {
         this.requestId = requestId;
-    }
-
-    public void setRandomCode(byte[] randomCode) {
-        this.randomCode = randomCode;
     }
 
     public void setPacketOrder(byte packetOrder) {
@@ -162,7 +151,7 @@ public abstract class ProxyProtocol {
         this.mSendData = sendData;
     }
 
-    public ByteBuffer toData() {
+    public ByteBuffer toData(IEncryptComponent encryptComponent) {
         return null;
     }
 

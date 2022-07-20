@@ -1,5 +1,7 @@
 package com.open.proxy.protocol.security;
 
+import com.open.proxy.cryption.joggle.IEncryptComponent;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -20,7 +22,7 @@ public class SyncProtocol extends ProxyProtocol {
     }
 
     @Override
-    public ByteBuffer toData() {
+    public ByteBuffer toData(IEncryptComponent encryptComponent) {
         if (sendData() == null) {
             return null;
         }

@@ -1,7 +1,7 @@
 package com.open.proxy.connect.socks5;
 
 
-import com.currency.net.nio.NioSender;
+import com.jav.net.nio.NioSender;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;

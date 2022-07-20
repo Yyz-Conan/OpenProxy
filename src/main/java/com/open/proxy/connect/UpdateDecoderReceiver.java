@@ -1,14 +1,14 @@
 package com.open.proxy.connect;
 
 
-import com.currency.net.base.SocketChannelCloseException;
-import com.currency.net.nio.NioReceiver;
+import com.jav.common.log.LogDog;
+import com.jav.common.util.IoEnvoy;
+import com.jav.common.util.TypeConversion;
+import com.jav.net.base.SocketChannelCloseException;
+import com.jav.net.nio.NioReceiver;
 import com.open.proxy.connect.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.connect.joggle.IUpdateConfirmCallBack;
 import com.open.proxy.protocol.DataPacketTag;
-import log.LogDog;
-import util.IoEnvoy;
-import util.TypeConversion;
 
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;

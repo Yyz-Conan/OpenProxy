@@ -1,5 +1,7 @@
 package com.open.proxy.protocol.security;
 
+import com.open.proxy.cryption.joggle.IEncryptComponent;
+
 import java.nio.ByteBuffer;
 import java.util.Base64;
 
@@ -12,7 +14,6 @@ public class DataProtocol extends ProxyProtocol {
 
     public DataProtocol(String machine, byte[] data, boolean isRequest) {
         super(machine, data, isRequest);
-        setEnType(EnType.BASE64.getType());
     }
 
     @Override
@@ -21,21 +22,23 @@ public class DataProtocol extends ProxyProtocol {
     }
 
     @Override
-    public ByteBuffer toData() {
+    public ByteBuffer toData(IEncryptComponent encryptComponent) {
         if (sendData() == null) {
             return null;
         }
-        int length = sendData().length + 58;
+        int length = sendData().length + 42;
         ByteBuffer buffer = ByteBuffer.allocate(length);
         buffer.putLong(time());
+        buffer.put(requestId());
         buffer.put(cmdType());
-        buffer.putShort(requestId());
-        buffer.put(randomCode());
         buffer.put(packetOrder());
         buffer.put(sendData());
 
         byte[] data = buffer.array();
-        byte[] enData = Base64.getEncoder().encode(data);
+        byte[] enData = data;
+        if (encryptComponent != null) {
+            enData = encryptComponent.onEncrypt(data);
+        }
         ByteBuffer finalData = ByteBuffer.allocate(enData.length + 4);
         finalData.putInt(enData.length);
         finalData.put(enData);

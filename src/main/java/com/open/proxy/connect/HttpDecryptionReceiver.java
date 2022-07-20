@@ -1,16 +1,15 @@
 package com.open.proxy.connect;
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.base.joggle.INetReceiver;
-import com.currency.net.base.joggle.INetSender;
-import com.currency.net.entity.MultiByteBuffer;
-import com.currency.net.nio.NioReceiver;
-import com.currency.net.xhttp.entity.XHttpDecoderStatus;
-import com.currency.net.xhttp.entity.XReceiverMode;
-import com.currency.net.xhttp.entity.XResponse;
-import com.currency.net.xhttp.utils.XHttpDecoderProcessor;
+import com.jav.net.base.joggle.INetReceiver;
+import com.jav.net.base.joggle.INetSender;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioReceiver;
+import com.jav.net.xhttp.entity.XHttpDecoderStatus;
+import com.jav.net.xhttp.entity.XReceiverMode;
+import com.jav.net.xhttp.entity.XResponse;
+import com.jav.net.xhttp.utils.XHttpDecoderProcessor;
+import com.open.proxy.connect.http.SecurityReceiverProcess;
 import com.open.proxy.connect.joggle.IDecryptionDataListener;
-import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.utils.RequestHelper;
 
 /**
@@ -21,20 +20,21 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
     private INetSender localSender;
     private INetSender remoteSender;
 
-    private CoreHttpDecoderProcessor httpDecoder;
-    private DecryptionReceiver decryptionReceiver;
+    private CoreHttpDecoderProcessor mHttpDecoder;
+    private SecurityReceiverProcess mSecurityReceiverProcess;
+    private SecurityReceiver mDecryptionReceiver;
 
 
     public HttpDecryptionReceiver(boolean isEnableDecryption) {
-        httpDecoder = new CoreHttpDecoderProcessor();
-        decryptionReceiver = new DecryptionReceiver(isEnableDecryption);
-        decryptionReceiver.setDecodeTag(DataPacketTag.PACK_PROXY_TAG);
-        decryptionReceiver.setDataReceiver(httpDecoder);
-        decryptionReceiver.setOnDecryptionDataListener(this);
+        mHttpDecoder = new CoreHttpDecoderProcessor();
+        mDecryptionReceiver = new SecurityReceiver();
+        mSecurityReceiverProcess = new SecurityReceiverProcess();
+        mSecurityReceiverProcess.setDecryptionDataListener(this);
+        mDecryptionReceiver.setProcessListener(mSecurityReceiverProcess);
     }
 
     public NioReceiver getReceiver() {
-        return decryptionReceiver;
+        return mDecryptionReceiver;
     }
 
     /**
@@ -53,8 +53,9 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
      * @param receiver
      */
     public void setDataReceiver(INetReceiver<XResponse> receiver) {
-        httpDecoder.setDataReceiver(receiver);
-        httpDecoder.setMode(XReceiverMode.REQUEST);
+        mHttpDecoder.setDataReceiver(receiver);
+        mHttpDecoder.setMode(XReceiverMode.REQUEST);
+        mSecurityReceiverProcess.setReceiverMode(XReceiverMode.REQUEST);
     }
 
     /**
@@ -64,16 +65,17 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
      */
     public void setResponseSender(INetSender localTarget) {
         this.localSender = localTarget;
-        httpDecoder.setMode(XReceiverMode.RESPONSE);
+        mHttpDecoder.setMode(XReceiverMode.RESPONSE);
+        mSecurityReceiverProcess.setReceiverMode(XReceiverMode.RESPONSE);
     }
 
     @Override
     public void onDecryption(byte[] decrypt) {
         //回调步骤1
-        if (httpDecoder.getMode() == XReceiverMode.REQUEST) {
-            httpDecoder.onRequest(decrypt, decrypt.length);
+        if (mHttpDecoder.getMode() == XReceiverMode.REQUEST) {
+            mHttpDecoder.onRequest(decrypt, decrypt.length);
         } else {
-            remoteSender.sendData(SendPacket.getInstance(decrypt));
+            remoteSender.sendData(new MultiByteBuffer(decrypt));
         }
     }
 
@@ -106,7 +108,7 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
                     super.onRequest(data, len);
                 } else {
                     //当前状态非http的request请求体
-                    remoteSender.sendData(SendPacket.getInstance(data));
+                    remoteSender.sendData(new MultiByteBuffer(data));
                 }
             }
         }
@@ -117,7 +119,7 @@ public class HttpDecryptionReceiver implements IDecryptionDataListener {
             if (decrypt != null) {
                 onDecryption(decrypt);
             }
-            getReceiver().reuseBuf(buf);
+            getReceiver().getBufferComponent().reuseBuffer(buf);
         }
     }
 

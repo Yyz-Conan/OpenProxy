@@ -1,10 +1,11 @@
 package com.open.proxy.connect.socks5.client;
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.base.joggle.INetReceiver;
-import com.currency.net.entity.MultiByteBuffer;
-import com.currency.net.nio.NioReceiver;
-import com.currency.net.nio.NioSender;
+
+import com.jav.net.base.joggle.INetReceiver;
+import com.jav.net.component.joggle.ICacheComponent;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioReceiver;
+import com.jav.net.nio.NioSender;
 import com.open.proxy.connect.AbsClient;
 import com.open.proxy.connect.DecryptionReceiver;
 import com.open.proxy.connect.EncryptionSender;
@@ -52,7 +53,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
 
     private void enableProxy() {
         byte[] data = HtmlGenerator.httpsTunnelEstablished();
-        mListener.onDownStreamData(SendPacket.getInstance(data));
+        mListener.onDownStreamData(new MultiByteBuffer(data));
     }
 
     public String getRealHost() {
@@ -69,14 +70,15 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         setReceiver(receiver);
         NioSender sender = new NioSender();
         sender.setSenderFeedback(this);
-        sender.enablePrestore();
         setSender(sender);
     }
 
     private void sendRealTargetInfo(String realHost, int realPort) {
         byte[] targetInfo = createTargetInfoProtocol(realHost, realPort);
         EncryptionSender sender = getSender();
-        sender.sendData(SendPacket.getInstance(targetInfo));
+        ICacheComponent component = sender.getCacheComponent();
+        component.addLastData(new MultiByteBuffer(targetInfo));
+//        sender.sendData(new MultiByteBuffer(targetInfo));
         //发送完hello数据,切换tag(PACK_SOCKS5_DATA_TAG)用于中转数据
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
     }
@@ -89,7 +91,6 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         setReceiver(decryptionReceiver);
         EncryptionSender sender = new EncryptionSender(true);
         sender.setSenderFeedback(this);
-        sender.enablePrestore();
         //当前是远程服务端使用,第一个hello数据是 PACK_SOCKS5_HELLO_TAG 类型
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_HELLO_TAG);
         setSender(sender);
@@ -114,12 +115,11 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
         getSender().setChannel(getSelectionKey(), channel);
-        getSender().disablePrestore();
     }
 
 
     @Override
     public void onReceiveFullData(MultiByteBuffer buffer, Throwable throwable) {
-        mListener.onDownStreamData(SendPacket.getInstance(buffer));
+        mListener.onDownStreamData(buffer);
     }
 }

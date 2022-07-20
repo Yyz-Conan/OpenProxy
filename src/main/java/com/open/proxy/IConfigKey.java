@@ -5,11 +5,11 @@ public interface IConfigKey {
 
     String KEY_DEBUG_MODE = "debugMode";
 
-    String FILE_PUBLIC_KEY = "public.key";
-    String FILE_PRIVATE_KEY = "private.key";
     String FILE_CONFIG = "config.cfg";
     String FILE_INTERCEPT = "interceptFile";
     String FILE_PROXY = "proxyFile";
+    String FILE_PUBLIC_KEY = "rsaPublicFile";
+    String FILE_PRIVATE_KEY = "rsaPrivateFile";
     String FILE_BG_IMAGE = "bg.jpg";
 
     //只在服务模式下使用
@@ -39,6 +39,8 @@ public interface IConfigKey {
     //更新服务使用
     String CONFIG_NEW_VERSION = "newVersion";
     String CONFIG_UPDATE_FILE_PATH = "updateFilePath";
+
+    String CONFIG_MACHINE_ID = "machineId";
 
     //应用当前版本号
     int currentVersion = 2;

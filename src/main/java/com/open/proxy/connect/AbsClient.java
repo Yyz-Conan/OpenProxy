@@ -1,10 +1,11 @@
 package com.open.proxy.connect;
 
-import com.currency.net.base.joggle.INetSender;
-import com.currency.net.base.joggle.ISenderFeedback;
-import com.currency.net.nio.NioClientFactory;
-import com.currency.net.nio.NioClientTask;
-import com.currency.net.ssl.TLSHandler;
+
+import com.jav.net.base.joggle.INetSender;
+import com.jav.net.base.joggle.ISenderFeedback;
+import com.jav.net.nio.NioClientFactory;
+import com.jav.net.nio.NioClientTask;
+import com.jav.net.ssl.TLSHandler;
 import com.open.proxy.connect.joggle.IRemoteClientCloseListener;
 
 import java.nio.channels.SocketChannel;

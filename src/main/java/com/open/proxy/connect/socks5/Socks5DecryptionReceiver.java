@@ -1,6 +1,7 @@
 package com.open.proxy.connect.socks5;
 
-import com.currency.net.base.SendPacket;
+
+import com.jav.net.entity.MultiByteBuffer;
 import com.open.proxy.connect.DecryptionReceiver;
 import com.open.proxy.connect.joggle.IDecryptionDataListener;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
@@ -60,11 +61,11 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
             status = Socks5ProcessStatus.FORWARD;
         } else if (status == Socks5ProcessStatus.FORWARD) {
             //中转状态直接回调数据
-            SendPacket sendPacket = SendPacket.getInstance(decrypt);
+            MultiByteBuffer buffer = new MultiByteBuffer(decrypt);
             if (serverMode) {
-                mListener.onUpstreamData(sendPacket);
+                mListener.onUpstreamData(buffer);
             } else {
-                mListener.onDownStreamData(sendPacket);
+                mListener.onDownStreamData(buffer);
             }
         }
     }

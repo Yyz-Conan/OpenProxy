@@ -1,10 +1,15 @@
 package com.open.proxy.cryption;
 
-import com.open.proxy.cryption.joggle.IEncryptTransform;
+import com.open.proxy.cryption.joggle.IEncryptComponent;
 
 import java.util.Base64;
 
-public class Base64Encrypt implements IEncryptTransform {
+public class Base64Encrypt implements IEncryptComponent {
+
+    @Override
+    public Object getEncrypt() {
+        return Base64.getEncoder();
+    }
 
     @Override
     public byte[] onEncrypt(byte[] src) {

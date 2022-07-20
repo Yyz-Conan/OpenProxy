@@ -1,10 +1,10 @@
 package com.open.proxy.connect.socks5.server;
 
 
-import com.currency.net.nio.NioServerTask;
+import com.jav.common.log.LogDog;
+import com.jav.net.nio.NioServerTask;
 import com.open.proxy.connect.socks5.Socks5NetFactory;
 import com.open.proxy.connect.socks5.client.Socks5InteractiveClient;
-import log.LogDog;
 
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;

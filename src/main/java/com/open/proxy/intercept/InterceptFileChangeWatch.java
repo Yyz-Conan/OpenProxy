@@ -1,6 +1,7 @@
 package com.open.proxy.intercept;
 
-import log.LogDog;
+
+import com.jav.common.log.LogDog;
 
 public class InterceptFileChangeWatch extends BaseFileChangeWatch {
 

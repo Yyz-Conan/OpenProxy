@@ -1,12 +1,16 @@
 package com.open.proxy.connect.http.client;
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.base.joggle.INetReceiver;
-import com.currency.net.entity.MultiByteBuffer;
-import com.currency.net.nio.NioReceiver;
-import com.currency.net.nio.NioSender;
-import com.currency.net.xhttp.entity.XResponse;
-import com.currency.net.xhttp.utils.ByteCacheStream;
+
+import com.jav.common.log.LogDog;
+import com.jav.common.track.SpiderEnvoy;
+import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.common.util.StringEnvoy;
+import com.jav.net.base.joggle.INetReceiver;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioReceiver;
+import com.jav.net.nio.NioSender;
+import com.jav.net.xhttp.entity.XResponse;
+import com.jav.net.xhttp.utils.ByteCacheStream;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OPContext;
 import com.open.proxy.connect.AbsClient;
@@ -14,10 +18,6 @@ import com.open.proxy.connect.EncryptionSender;
 import com.open.proxy.connect.HttpDecryptionReceiver;
 import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.protocol.HtmlGenerator;
-import log.LogDog;
-import track.SpiderEnvoy;
-import util.ConfigFileEnvoy;
-import util.StringEnvoy;
 
 import java.nio.channels.SocketChannel;
 
@@ -93,10 +93,10 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
 
         if (StringEnvoy.isEmpty(mRealHost)) {
             //当前是https请求而且不走代理请求，则响应代理请求
-            mReceptionSender.sendData(SendPacket.getInstance(HtmlGenerator.httpsTunnelEstablished()));
+            mReceptionSender.sendData(new MultiByteBuffer(HtmlGenerator.httpsTunnelEstablished()));
             SpiderEnvoy.getInstance().pinKeyProbe(TransmissionProxyClient.this.toString(), "返回CONNECT 响应");
         } else {
-            getSender().sendData(SendPacket.getInstance(mConnectData));
+            getSender().sendData(new MultiByteBuffer(mConnectData));
             mConnectData = null;
         }
     }
@@ -107,7 +107,7 @@ public class TransmissionProxyClient extends AbsClient implements INetReceiver<M
             LogDog.e("++> onReceiveException host = " + getHost() + ":" + getPort());
         }
         //对应NioReceiver
-        mReceptionSender.sendData(SendPacket.getInstance(buf));
+        mReceptionSender.sendData(buf);
     }
 
 

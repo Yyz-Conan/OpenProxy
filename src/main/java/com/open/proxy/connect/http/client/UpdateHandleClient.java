@@ -1,22 +1,22 @@
 package com.open.proxy.connect.http.client;
 
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.base.joggle.INetSender;
-import com.currency.net.base.joggle.ISenderFeedback;
-import com.currency.net.nio.NioClientFactory;
-import com.currency.net.nio.NioClientTask;
-import com.currency.net.nio.NioSender;
+import com.jav.common.log.LogDog;
+import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.common.util.StringEnvoy;
+import com.jav.common.util.TypeConversion;
+import com.jav.net.base.joggle.INetSender;
+import com.jav.net.base.joggle.ISenderFeedback;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioClientFactory;
+import com.jav.net.nio.NioClientTask;
+import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OPContext;
 import com.open.proxy.connect.UpdateDecoderReceiver;
 import com.open.proxy.connect.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.connect.joggle.IUpdateConfirmCallBack;
 import com.open.proxy.protocol.DataPacketTag;
-import log.LogDog;
-import util.ConfigFileEnvoy;
-import util.StringEnvoy;
-import util.TypeConversion;
 
 import java.io.*;
 import java.nio.MappedByteBuffer;
@@ -64,17 +64,17 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         getSender().setChannel(getSelectionKey(), channel);
         if (currentVersion > 0) {
             //send update com.open.proxy.protocol head
-            getSender().sendData(SendPacket.getInstance(DataPacketTag.PACK_UPDATE_TAG));
+            getSender().sendData(new MultiByteBuffer(DataPacketTag.PACK_UPDATE_TAG));
             //send data
             byte[] versionByte = TypeConversion.intToByte(currentVersion);
-            getSender().sendData(SendPacket.getInstance(versionByte));
+            getSender().sendData(new MultiByteBuffer(versionByte));
         }
     }
 
 
     @Override
     public void onSenderFeedBack(INetSender iNetSender, Object o, Throwable throwable) {
-        if (getSender().isCacheEmpty()) {
+        if (getSender().getCacheComponent().size() == 0) {
             //数据发送完毕断开连接
             NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(this);
         }
@@ -89,10 +89,10 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         boolean isHasNewVersion = version < newVersion;
         //响应是否有新版本
         //send update com.open.proxy.protocol head
-        getSender().sendData(SendPacket.getInstance(DataPacketTag.PACK_UPDATE_TAG));
+        getSender().sendData(new MultiByteBuffer(DataPacketTag.PACK_UPDATE_TAG));
         //send data
         byte[] countFileByte = TypeConversion.intToByte(isHasNewVersion ? 1 : 0);
-        getSender().sendData(SendPacket.getInstance(countFileByte));
+        getSender().sendData(new MultiByteBuffer(countFileByte));
 
         if (isHasNewVersion && StringEnvoy.isNotEmpty(updateFilePath)) {
             File updateFile = new File(updateFilePath);
@@ -102,7 +102,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                     byte[] fileSizeByte = TypeConversion.long2Bytes(fileSize);
                     //响应更新文件大小
                     LogDog.d("==> send update file size to client !");
-                    getSender().sendData(SendPacket.getInstance(fileSizeByte));
+                    getSender().sendData(new MultiByteBuffer(fileSizeByte));
                     //响应更新文件数据
                     LogDog.d("==> send update file to client !");
                     sendFileData(updateFile);
@@ -132,7 +132,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 long fileSize = fileChannel.size();
                 do {
                     MappedByteBuffer byteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, position, size);
-                    getSender().sendData(SendPacket.getInstance(byteBuffer));
+                    getSender().sendData(new MultiByteBuffer(byteBuffer));
                     position += size;
                     if (fileSize - position < size) {
                         size = fileSize - position;

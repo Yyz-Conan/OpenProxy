@@ -1,8 +1,8 @@
 package com.open.proxy.intercept;
 
-import com.open.proxy.OPContext;
+
+import com.jav.common.util.StringEnvoy;
 import com.open.proxy.intercept.joggle.IInterceptFilter;
-import util.StringEnvoy;
 
 import java.util.ArrayList;
 import java.util.List;

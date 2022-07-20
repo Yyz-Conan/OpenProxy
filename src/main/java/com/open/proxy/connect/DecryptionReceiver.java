@@ -1,18 +1,18 @@
 package com.open.proxy.connect;
 
-import com.currency.net.base.SocketChannelCloseException;
-import com.currency.net.nio.NioReceiver;
+
+import com.jav.common.util.IoEnvoy;
+import com.jav.common.util.TypeConversion;
+import com.jav.net.base.SocketChannelCloseException;
+import com.jav.net.nio.NioReceiver;
 import com.open.proxy.connect.joggle.DecryptionStatus;
 import com.open.proxy.connect.joggle.IDecryptionDataListener;
-import com.open.proxy.cryption.DataSafeManager;
-import util.IoEnvoy;
-import util.TypeConversion;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
-public class DecryptionReceiver extends NioReceiver  {
+public class DecryptionReceiver extends NioReceiver {
 
     private boolean mIsNeedDecryption;
     private ByteBuffer packetHead;
@@ -23,7 +23,7 @@ public class DecryptionReceiver extends NioReceiver  {
 
 
     public DecryptionReceiver(boolean isNeedDecryption) {
-        mIsNeedDecryption = isNeedDecryption && DataSafeManager.getInstance().isEnable();
+        mIsNeedDecryption = isNeedDecryption;
         if (isNeedDecryption) {
             packetHead = ByteBuffer.allocate(4);
             decryptionStatus = DecryptionStatus.TAG;
@@ -74,10 +74,10 @@ public class DecryptionReceiver extends NioReceiver  {
             if (decryptionStatus == DecryptionStatus.DATA) {
                 int ret = IoEnvoy.readToFull(channel, packetData);
                 if (ret == IoEnvoy.SUCCESS) {
-                    byte[] decrypt = DataSafeManager.getInstance().decode(packetData.array());
-                    if (mListener != null) {
-                        mListener.onDecryption(decrypt);
-                    }
+//                    byte[] decrypt = DataSafeManager.getInstance().decode(packetData.array());
+//                    if (mListener != null) {
+//                        mListener.onDecryption(decrypt);
+//                    }
                     packetData = null;
                     decryptionStatus = DecryptionStatus.TAG;
                 } else if (ret == IoEnvoy.FAIL) {

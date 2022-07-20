@@ -1,20 +1,19 @@
 package com.open.proxy;
 
-import com.currency.net.nio.NioClientFactory;
-import com.currency.net.nio.NioServerFactory;
-import com.currency.net.xhttp.XMultiplexCacheManger;
+import com.jav.common.log.LogDog;
+import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.common.util.NetUtils;
+import com.jav.common.util.StringEnvoy;
+import com.jav.net.nio.NioClientFactory;
+import com.jav.net.nio.NioServerFactory;
+import com.jav.net.xhttp.XMultiplexCacheManger;
+import com.jav.thread.executor.TaskExecutorPoolManager;
 import com.open.proxy.connect.http.server.MultipleProxyServer;
 import com.open.proxy.connect.http.server.UpdateServer;
 import com.open.proxy.connect.socks5.server.Socks5Server;
-import com.open.proxy.cryption.DataSafeManager;
-import com.open.proxy.cryption.EncryptionType;
+import com.open.proxy.cryption.joggle.EncryptionType;
 import com.open.proxy.cryption.RSADataEnvoy;
 import com.open.proxy.intercept.*;
-import log.LogDog;
-import task.executor.TaskExecutorPoolManager;
-import util.ConfigFileEnvoy;
-import util.NetUtils;
-import util.StringEnvoy;
 
 public class ProxyMain {
 
@@ -77,15 +76,17 @@ public class ProxyMain {
         if (EncryptionType.RSA.name().equals(encryption)) {
             initRSA();
         }
-        DataSafeManager.getInstance().init();
     }
 
     private static void initRSA() {
-        String publicKey = OPContext.getInstance().getEnvFilePath(IConfigKey.FILE_PUBLIC_KEY);
-        String privateKey = OPContext.getInstance().getEnvFilePath(IConfigKey.FILE_PRIVATE_KEY);
+        ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        String publicKey = cFileEnvoy.getValue(IConfigKey.FILE_PUBLIC_KEY);
+        String privateKey = cFileEnvoy.getValue(IConfigKey.FILE_PRIVATE_KEY);
+        String publicFile = OPContext.getInstance().getEnvFilePath(publicKey);
+        String privateFile = OPContext.getInstance().getEnvFilePath(privateKey);
         try {
             RSADataEnvoy rsaDataEnvoy = new RSADataEnvoy();
-            rsaDataEnvoy.init(publicKey, privateKey);
+            rsaDataEnvoy.init(publicFile, privateFile);
             OPContext.getInstance().setRsaDataEnvoy(rsaDataEnvoy);
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,9 +1,20 @@
 package com.open.proxy.cryption;
 
 import com.open.proxy.OPContext;
-import com.open.proxy.cryption.joggle.IEncryptTransform;
+import com.open.proxy.cryption.joggle.IEncryptComponent;
 
-public class RSAEncrypt implements IEncryptTransform {
+public class RSAEncrypt implements IEncryptComponent {
+
+    private RSADataEnvoy mRsaDataEnvoy;
+
+    public RSAEncrypt() {
+        mRsaDataEnvoy = new RSADataEnvoy();
+    }
+
+    @Override
+    public Object getEncrypt() {
+        return mRsaDataEnvoy;
+    }
 
     @Override
     public byte[] onEncrypt(byte[] src) {

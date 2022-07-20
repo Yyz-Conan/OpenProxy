@@ -30,7 +30,7 @@ import java.nio.channels.SocketChannel;
 /**
  * 接待需要代理的客户端
  */
-public class ReceptionProxyClient extends NioClientTask implements IRemoteClientCloseListener, ISenderFeedback, INetReceiver<XResponse> {
+public class LocalClient extends NioClientTask implements IRemoteClientCloseListener, ISenderFeedback, INetReceiver<XResponse> {
 
     private boolean isServerMode;
     private boolean isBlacklist = false;
@@ -41,14 +41,14 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
     private boolean isEnableProxy;
     private boolean allowProxy;
 
-    public ReceptionProxyClient(SocketChannel channel) {
+    public LocalClient(SocketChannel channel) {
         super(channel, null);
 
         ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
         isEnableProxy = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_PROXY);
         boolean isDebug = cFileEnvoy.getBooleanValue(IConfigKey.KEY_DEBUG_MODE);
         SpiderEnvoy.getInstance().setEnablePrint(isDebug);
-        SpiderEnvoy.getInstance().startWatchKey(ReceptionProxyClient.this.toString());
+        SpiderEnvoy.getInstance().startWatchKey(LocalClient.this.toString());
 
         isServerMode = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);
         allowProxy = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ALLOW_PROXY);
@@ -69,7 +69,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
         getSender().setChannel(getSelectionKey(), channel);
-        SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), "onBeReadyChannel");
+        SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), "onBeReadyChannel");
     }
 
 
@@ -78,12 +78,12 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
         String newRequestHost = XResponseHelper.getHost(response);
         if (StringEnvoy.isEmpty(newRequestHost) && StringEnvoy.isEmpty(requestHost)) {
             String msg = "newRequestHost and requestHost is null ";
-            SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
             byte[] data = response.getRawData().toByteArray();
             if (data != null && data.length > 0) {
                 LogDog.d("==>browser heartbeat data = " + new String(data));
             }
-            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(ReceptionProxyClient.this);
+            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(LocalClient.this);
             return;
         }
 
@@ -109,7 +109,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
             NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(transmissionProxyClient);
             transmissionProxyClient = null;
             String msg = "the new request host = " + newRequestHost + " is inconsistent with the current request host = " + requestHost;
-            SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
         }
 
         if (transmissionProxyClient != null) {
@@ -120,7 +120,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
                 sender.sendData(new MultiByteBuffer(raw.toByteArray()));
             }
             String msg = "multiplex curt proxy send data, newRequestHost = " + newRequestHost + " requestHost = " + requestHost;
-            SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
             LogDog.d(msg);
         } else {
             LogDog.d("<-x_proxy-> Connect " + newRequestHost);
@@ -131,7 +131,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
                 //当前是服务模式，请求指定的域名，需要响应 com.open.proxy.connect 请求
                 client.enableLocalConnect(newRequestHost, port);
                 String msg = "server model create client newRequestHost = " + newRequestHost + " port = " + port;
-                SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
             } else {
                 //当前是客户端模式
                 boolean isNeedProxy = allowProxy;
@@ -143,15 +143,15 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
                     //在代理名单并且开启了代理
                     client.enableProxyConnect(newRequestHost);
                     String msg = "client model need proxy create proxy client realHost = " + newRequestHost;
-                    SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                    SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
                 } else {
                     //不能走代理
                     client.enableLocalConnect(newRequestHost, port);
                     String msg = "client model local net model create client newRequestHost = " + newRequestHost + " port = " + port;
-                    SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+                    SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
                 }
             }
-            client.setOnCloseListener(ReceptionProxyClient.this);
+            client.setOnCloseListener(LocalClient.this);
             NioClientFactory.getFactory().getNetTaskContainer().addExecTask(client);
             transmissionProxyClient = client;
             requestHost = newRequestHost;
@@ -162,16 +162,16 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
     @Override
     public void onClientClose(String host) {
         if (StringEnvoy.isNotEmpty(host) && host.equals(requestHost) && getTaskStatus() == NetTaskStatusCode.RUN) {
-            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(ReceptionProxyClient.this);
+            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(LocalClient.this);
             String msg = "onClose requestHost = " + requestHost + " proxy host = " + host;
-            SpiderEnvoy.getInstance().pinKeyProbe(ReceptionProxyClient.this.toString(), msg);
+            SpiderEnvoy.getInstance().pinKeyProbe(LocalClient.this.toString(), msg);
         }
     }
 
     @Override
     public void onSenderFeedBack(INetSender iNetSender, Object data, Throwable throwable) {
         if (throwable != null || isBlacklist) {
-            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(ReceptionProxyClient.this);
+            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(LocalClient.this);
         }
     }
 
@@ -185,7 +185,7 @@ public class ReceptionProxyClient extends NioClientTask implements IRemoteClient
         }
         NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(transmissionProxyClient);
 
-        String report = SpiderEnvoy.getInstance().endWatchKey(ReceptionProxyClient.this.toString());
+        String report = SpiderEnvoy.getInstance().endWatchKey(LocalClient.this.toString());
         LogDog.saveLog(report);
     }
 

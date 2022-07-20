@@ -1,7 +1,9 @@
 package com.open.proxy.connect.socks5.client;
 
-import com.currency.net.base.SendPacket;
-import com.currency.net.nio.NioSender;
+import com.jav.common.log.LogDog;
+import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OPContext;
 import com.open.proxy.connect.AbsClient;
@@ -16,8 +18,6 @@ import com.open.proxy.connect.socks5.server.Socks5Server;
 import com.open.proxy.intercept.ProxyFilterManager;
 import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.protocol.Socks5Generator;
-import log.LogDog;
-import util.ConfigFileEnvoy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -87,7 +87,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     public Socks5Generator.Socks5Verification onClientSupportMethod(List<Socks5Generator.Socks5Verification> methods) {
         //响应不需要用户和密码验证
         Socks5Generator.Socks5Verification choiceMethod = methods.get(0);
-        getSender().sendData(SendPacket.getInstance(Socks5Generator.buildVerVerificationMethodResponse(choiceMethod)));
+        getSender().sendData(new MultiByteBuffer(Socks5Generator.buildVerVerificationMethodResponse(choiceMethod)));
         return choiceMethod;
     }
 
@@ -95,7 +95,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     public boolean onVerification(String userName, String password) {
         //响应通过校验
         LogDog.d("<-x_proxy_socks5-> Socks5LocalClient verification client userName = " + userName + " password = " + password);
-        getSender().sendData(SendPacket.getInstance(Socks5Generator.buildVerVerificationResponse()));
+        getSender().sendData(new MultiByteBuffer(Socks5Generator.buildVerVerificationResponse()));
         return true;
     }
 
@@ -104,7 +104,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
         try {
             byte[] response = Socks5Generator.buildCommandResponse(status.rangeStart,
                     Socks5Generator.Socks5AddressType.DOMAIN, getHost(), getPort());
-            getSender().sendData(SendPacket.getInstance(response));
+            getSender().sendData(new MultiByteBuffer(response));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -138,22 +138,22 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     /**
      * 把代理客户端请求的数据中转发送给目标服务（远程代理服务或者真实目标服务）
      *
-     * @param sendPacket
+     * @param buffer
      */
     @Override
-    public void onUpstreamData(SendPacket sendPacket) {
+    public void onUpstreamData(MultiByteBuffer buffer) {
         //如果是服务端模式,则把数据发给真实目录服务端
-        transmissionClient.getSender().sendData(sendPacket);
+        transmissionClient.getSender().sendData(buffer);
     }
 
     /**
      * 把远程服务或者真实目标服务数据回传给代理客户端
      *
-     * @param sendPacket
+     * @param buffer
      */
     @Override
-    public void onDownStreamData(SendPacket sendPacket) {
-        getSender().sendData(sendPacket);
+    public void onDownStreamData(MultiByteBuffer buffer) {
+        getSender().sendData(buffer);
     }
 
     @Override

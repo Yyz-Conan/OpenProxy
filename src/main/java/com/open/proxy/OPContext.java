@@ -1,13 +1,15 @@
 package com.open.proxy;
 
+import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.common.util.StringEnvoy;
 import com.open.proxy.cryption.RSADataEnvoy;
-import com.sun.istack.internal.Nullable;
-import util.ConfigFileEnvoy;
+import com.open.proxy.utils.PasswordUtils;
 
 import java.io.File;
 
 public class OPContext {
 
+    public static final String MONITOR_FILE = "monitor.page";
     private static final String KEY_USER_DIR = "user.dir";
     private static final String KEY_COMMAND = "sun.java.command";
 
@@ -32,6 +34,8 @@ public class OPContext {
     private String currentWorkDir = null;
     private String currentCommand = null;
 
+    private String mDesPassword;
+
     public ConfigFileEnvoy getConfigFileEnvoy() {
         return mCFileEnvoy;
     }
@@ -49,7 +53,6 @@ public class OPContext {
         currentCommand = System.getProperty(KEY_COMMAND);
     }
 
-    @Nullable
     public String getCurrentWorkDir() {
         return currentWorkDir;
     }
@@ -72,5 +75,13 @@ public class OPContext {
 
     public String getEnvFilePath(String file) {
         return getRunEnvPath() + file;
+    }
+
+
+    public String getDesPassword() {
+        if (StringEnvoy.isEmpty(mDesPassword)) {
+            mDesPassword = PasswordUtils.randomPassword(32);
+        }
+        return mDesPassword;
     }
 }
