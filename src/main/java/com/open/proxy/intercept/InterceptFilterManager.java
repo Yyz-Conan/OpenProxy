@@ -38,11 +38,12 @@ public class InterceptFilterManager {
     }
 
     public boolean isIntercept(String host) {
-        if (StringEnvoy.isNotEmpty(host)) {
-            for (IInterceptFilter filter : proxyFilterList) {
-                if (filter.isIntercept(host)) {
-                    return true;
-                }
+        if (StringEnvoy.isEmpty(host) || proxyFilterList.isEmpty()) {
+            return false;
+        }
+        for (IInterceptFilter filter : proxyFilterList) {
+            if (filter.isIntercept(host)) {
+                return true;
             }
         }
         return false;

@@ -1,4 +1,4 @@
-package com.open.proxy.connect;
+package com.open.proxy.connect.update;
 
 
 import com.jav.common.log.LogDog;

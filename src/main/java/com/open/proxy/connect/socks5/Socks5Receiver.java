@@ -44,7 +44,7 @@ public class Socks5Receiver {
             consultCertification(channel, choiceMethod);
             if (status == Socks5ProcessStatus.FORWARD) {
                 setDataReceiver(this);
-                //socks5流程处理完毕，切换成中转处理方式，对数据不做任何处理
+                // socks5流程处理完毕，切换成中转处理方式，对数据不做任何处理
                 super.onReadNetData(channel);
             }
         }
@@ -54,7 +54,7 @@ public class Socks5Receiver {
                 return null;
             }
             byte[] data = readChannel(channel, 2);
-            //VERSION SOCKS协议版本，目前固定0x05
+            // VERSION SOCKS协议版本，目前固定0x05
             if (data[0] != Socks5Generator.VERSION) {
                 throw new RuntimeException("version must 0X05");
             }
@@ -83,7 +83,7 @@ public class Socks5Receiver {
         private void consultCertification(SocketChannel channel, Socks5Generator.Socks5Verification choiceMethod) throws Throwable {
             if (status == Socks5ProcessStatus.VERIFICATION) {
                 if (choiceMethod == Socks5Generator.Socks5Verification.USERNAME_PASSWORD) {
-                    //选择了用户名和密码校验
+                    // 选择了用户名和密码校验
                     byte[] data = readChannel(channel, 2);
                     if (data == null) {
                         return;
@@ -207,11 +207,15 @@ public class Socks5Receiver {
          * 直接中转数据
          *
          * @param buffer
-         * @param throwable
          */
         @Override
-        public void onReceiveFullData(MultiByteBuffer buffer, Throwable throwable) {
+        public void onReceiveFullData(MultiByteBuffer buffer) {
             listener.onUpstreamData(buffer);
+        }
+
+        @Override
+        public void onReceiveError(Throwable throwable) {
+
         }
     }
 }

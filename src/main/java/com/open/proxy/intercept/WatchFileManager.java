@@ -12,11 +12,16 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 监控文件修改,实现热更新配置
+ *
+ * @author yyz
+ */
 public class WatchFileManager extends LoopTask {
+
     private WatchService mWatchService;
     private List<IFileChangeWatch> mListenerList;
 
-    private static WatchFileManager sWatchConfigFileTask;
     private TaskContainer mContainer;
 
     private static class InnerClass {
@@ -41,7 +46,6 @@ public class WatchFileManager extends LoopTask {
     public void destroy() {
         if (mContainer != null) {
             mContainer.getTaskExecutor().stopTask();
-            sWatchConfigFileTask = null;
             mContainer = null;
         }
         if (mWatchService != null) {
@@ -67,9 +71,9 @@ public class WatchFileManager extends LoopTask {
             File file = new File(targetPath);
             Path path = Paths.get(file.getParent());
             path.register(mWatchService, StandardWatchEventKinds.ENTRY_MODIFY);
-            LogDog.d("==> monitor " + targetPath + " profile successfully !!!");
+            LogDog.d("monitor " + targetPath + " profile successfully !!!");
         } catch (Exception e) {
-            LogDog.e("==> monitor " + targetPath + " profile failed  !!!" + e.getMessage());
+            LogDog.e("monitor " + targetPath + " profile failed  !!!" + e.getMessage());
         }
     }
 
@@ -79,12 +83,11 @@ public class WatchFileManager extends LoopTask {
         try {
             key = mWatchService.take();
         } catch (Throwable e) {
-            e.printStackTrace();
         }
         if (key != null && key.isValid()) {
             for (WatchEvent<?> event : key.pollEvents()) {
                 if (event.count() == 1) {
-                    //文件内容发送改变
+                    // 文件内容发送改变
                     Path path = (Path) event.context();
                     for (IFileChangeWatch listener : mListenerList) {
                         listener.onTargetChange(path.toString());

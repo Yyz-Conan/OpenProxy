@@ -2,17 +2,21 @@ package com.open.proxy.connect.joggle;
 
 /**
  * 版本更新校验流程回调接口
+ *
+ * @author yyz
  */
 public interface IUpdateAffairsCallBack {
 
     /**
      * 服务端模式下检查客户端版本信息回调
+     *
      * @param version
      */
     void onServerCheckVersion(int version);
 
     /**
      * 客户端模式下检查服务端版本信息回调
+     *
      * @param isHasNewVersion
      * @param callBack
      */
@@ -20,6 +24,7 @@ public interface IUpdateAffairsCallBack {
 
     /**
      * 获取保存更新文件存储路径
+     *
      * @return
      */
     String getSaveFile();

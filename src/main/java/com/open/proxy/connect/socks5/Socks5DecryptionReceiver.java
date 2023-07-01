@@ -2,7 +2,6 @@ package com.open.proxy.connect.socks5;
 
 
 import com.jav.net.entity.MultiByteBuffer;
-import com.open.proxy.connect.DecryptionReceiver;
 import com.open.proxy.connect.joggle.IDecryptionDataListener;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
 import com.open.proxy.connect.joggle.Socks5ProcessStatus;

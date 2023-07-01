@@ -1,5 +1,8 @@
 package com.open.proxy.connect.joggle;
 
+/**
+ * 解密状态
+ */
 public enum DecryptionStatus {
 
     /**

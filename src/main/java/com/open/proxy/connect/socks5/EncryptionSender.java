@@ -1,11 +1,11 @@
-package com.open.proxy.connect;
+package com.open.proxy.connect.socks5;
 
 
+import com.jav.common.cryption.DataSafeManager;
+import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.util.TypeConversion;
 import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioSender;
-import com.open.proxy.cryption.DataSafeManager;
-import com.open.proxy.cryption.joggle.EncryptionType;
 
 import java.nio.ByteBuffer;
 

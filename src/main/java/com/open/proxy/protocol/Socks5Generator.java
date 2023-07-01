@@ -7,21 +7,30 @@ import java.util.List;
 
 /**
  * socks5协议构建器
+ *
+ * @author yyz
  */
 public class Socks5Generator {
 
     private Socks5Generator() {
     }
 
-    // socks协议的版本，固定为5
+    /**
+     * socks协议的版本，固定为5
+     */
     public static final byte VERSION = 5;
 
     public static final byte SUCCESS = 0;
-    // RSV，必须为0
+    /**
+     * RSV，必须为0
+     */
     public static final byte RSV = 0;
 
-    // 对于命令的处理结果
+    /**
+     * 对于命令的处理结果
+     */
     public enum Socks5CommandStatus {
+        // 成功
         SUCCEEDED((byte) 0, (byte) 0, "succeeded"),
         GENERAL_SOCKS_SERVER_FAILURE((byte) 1, (byte) 1, "general SOCKS server failure"),
         CONNECTION_NOT_ALLOWED_BY_RULESET((byte) 2, (byte) 2, "connection not allowed by ruleset"),
@@ -29,7 +38,9 @@ public class Socks5Generator {
         HOST_UNREACHABLE((byte) 4, (byte) 4, "Host unreachable"),
         CONNECTION_REFUSED((byte) 5, (byte) 5, "Connection refused"),
         TTL_EXPIRED((byte) 6, (byte) 6, "TTL expired"),
+        // 不支持该命令
         COMMAND_NOT_SUPPORTED((byte) 7, (byte) 7, "Command not supported"),
+        // 地址类型不支持
         ADDRESS_TYPE_NOT_SUPPORTED((byte) 8, (byte) 8, "Address type not supported"),
         UNASSIGNED((byte) 9, (byte) 0XFF, "unassigned");
 
@@ -45,15 +56,17 @@ public class Socks5Generator {
 
     }
 
-    // 要请求的地址类型
+    /**
+     * 要请求的地址类型
+     */
     public enum Socks5AddressType {
-        //IP V4地址
+        // IP V4地址
         IPV4((byte) 0X01, "the address is a version-4 IP address, with a length of 4 octets"),
-        //域名地址(没有打错，就是没有0x02)，域名地址的第1个字节为域名长度，剩下字节为域名名称字节数组
+        // 域名地址(没有打错，就是没有0x02)，域名地址的第1个字节为域名长度，剩下字节为域名名称字节数组
         DOMAIN((byte) 0X03, "the address field contains a fully-qualified domain name.  The first\n" +
                 "   octet of the address field contains the number of octets of name that\n" +
                 "   follow, there is no terminating NUL octet."),
-        //IP V6地址
+        // IP V6地址
         IPV6((byte) 0X04, "the address is a version-6 IP address, with a length of 16 octets.");
 
         public byte value;
@@ -75,10 +88,21 @@ public class Socks5Generator {
 
     }
 
-    // 客户端命令
+    /**
+     * 客户端命令
+     */
     public enum Socks5Command {
+        /**
+         * 链接
+         */
         CONNECT((byte) 0X01, "CONNECT"),
+        /**
+         * 绑定
+         */
         BIND((byte) 0X02, "BIND"),
+        /**
+         * udp
+         */
         UDP_ASSOCIATE((byte) 0X03, "UDP ASSOCIATE");
 
         byte value;
@@ -100,33 +124,39 @@ public class Socks5Generator {
 
     }
 
-    // 客户端认证方法
+    /**
+     * 客户端认证方法
+     */
     public enum Socks5Verification {
-        //不需要认证
+        // 不需要认证
         NO_AUTHENTICATION_REQUIRED((byte) 0X00, (byte) 0X00, "NO AUTHENTICATION REQUIRED"),
-        //GSSAPI认证
+        // GSSAPI认证
         GSSAPI((byte) 0X01, (byte) 0X01, "GSSAPI"),
-        //账号密码认证
+        // 账号密码认证
         USERNAME_PASSWORD((byte) 0X02, (byte) 0X02, " USERNAME/PASSWORD"),
-        //0x7F IANA分配
+        // 0x7F IANA分配
         IANA_ASSIGNED((byte) 0X03, (byte) 0X07, "IANA ASSIGNED"),
-        //0xFE 私有方法保留
+        // 0xFE 私有方法保留
         RESERVED_FOR_PRIVATE_METHODS((byte) 0X80, (byte) 0XFE, "RESERVED FOR PRIVATE METHODS"),
-        //无支持的认证方法
+        // 无支持的认证方法
         NO_ACCEPTABLE_METHODS((byte) 0XFF, (byte) 0XFF, "NO ACCEPTABLE METHODS");
 
-        private byte rangeStart;
-        private byte rangeEnd;
-        private String description;
+        private final byte mRangeStart;
+        private final byte mRangeEnd;
+        private final String mDescription;
 
         Socks5Verification(byte rangeStart, byte rangeEnd, String description) {
-            this.rangeStart = rangeStart;
-            this.rangeEnd = rangeEnd;
-            this.description = description;
+            this.mRangeStart = rangeStart;
+            this.mRangeEnd = rangeEnd;
+            this.mDescription = description;
+        }
+
+        public String getDescription() {
+            return mDescription;
         }
 
         public boolean isMe(byte value) {
-            return value >= rangeStart && value <= rangeEnd;
+            return value >= mRangeStart && value <= mRangeEnd;
         }
 
         public static List<Socks5Verification> convertToMethod(byte[] methodValues) {
@@ -147,7 +177,7 @@ public class Socks5Generator {
 
 
     public static byte[] buildVerVerificationMethodResponse(Socks5Verification method) {
-        return new byte[]{VERSION, method.rangeStart};
+        return new byte[]{VERSION, method.mRangeStart};
     }
 
     public static byte[] buildVerVerificationResponse() {
@@ -180,7 +210,8 @@ public class Socks5Generator {
      * @return
      * @throws IOException
      */
-    public static byte[] buildCommandResponse(byte commandStatusCode, Socks5AddressType addressType, String address, int port) throws IOException {
+    public static byte[] buildCommandResponse(byte commandStatusCode, Socks5AddressType addressType, String address,
+                                              int port) throws IOException {
         ByteArrayOutputStream payload = new ByteArrayOutputStream();
         payload.write(Socks5Generator.VERSION);
         payload.write(commandStatusCode);

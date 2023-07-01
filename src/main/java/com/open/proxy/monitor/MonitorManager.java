@@ -3,7 +3,7 @@ package com.open.proxy.monitor;
 
 import com.jav.thread.executor.LoopTask;
 import com.jav.thread.executor.TaskExecutorPoolManager;
-import com.open.proxy.OPContext;
+import com.open.proxy.OpContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,12 +32,12 @@ public final class MonitorManager {
 
         @Override
         protected void onInitTask() {
-            String runPath = OPContext.getInstance().getRunEnvPath();
+            String runPath = OpContext.getInstance().getRunEnvPath();
             File dir = new File(runPath);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
-            File pageFile = new File(dir, OPContext.MONITOR_FILE);
+            File pageFile = new File(dir, OpContext.MONITOR_FILE);
             if (!pageFile.exists()) {
                 try {
                     pageFile.createNewFile();

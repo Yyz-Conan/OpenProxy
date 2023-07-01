@@ -26,7 +26,7 @@ public class Socks5Server extends NioServerTask {
     @Override
     protected void onAcceptServerChannel(SocketChannel channel) {
         Socks5InteractiveClient client = new Socks5InteractiveClient(channel);
-        Socks5NetFactory.getFactory().getNetTaskContainer().addExecTask(client);
+        Socks5NetFactory.getFactory().getNetTaskComponent().addExecTask(client);
     }
 
     @Override

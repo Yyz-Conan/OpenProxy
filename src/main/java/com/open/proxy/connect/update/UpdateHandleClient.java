@@ -1,4 +1,4 @@
-package com.open.proxy.connect.http.client;
+package com.open.proxy.connect.update;
 
 
 import com.jav.common.log.LogDog;
@@ -12,8 +12,7 @@ import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
-import com.open.proxy.OPContext;
-import com.open.proxy.connect.UpdateDecoderReceiver;
+import com.open.proxy.OpContext;
 import com.open.proxy.connect.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.connect.joggle.IUpdateConfirmCallBack;
 import com.open.proxy.protocol.DataPacketTag;
@@ -49,7 +48,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         setReceiver(receiver);
         NioSender sender = new NioSender();
         if (isServerMode) {
-            ConfigFileEnvoy cFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+            ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
             newVersion = cFileEnvoy.getIntValue(IConfigKey.CONFIG_NEW_VERSION);
             updateFilePath = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_FILE_PATH);
             sender.setSenderFeedback(this);
@@ -76,7 +75,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     public void onSenderFeedBack(INetSender iNetSender, Object o, Throwable throwable) {
         if (getSender().getCacheComponent().size() == 0) {
             //数据发送完毕断开连接
-            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(this);
+            NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
         }
     }
 
@@ -161,7 +160,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
 
     @Override
     public String getSaveFile() {
-        return OPContext.getInstance().getCurrentWorkDir() + saveFile;
+        return OpContext.getInstance().getCurrentWorkDir() + saveFile;
     }
 
 
@@ -181,7 +180,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 FileOutputStream out = null;
                 try {
                     in = zipFile.getInputStream(entry);
-                    out = new FileOutputStream(OPContext.getInstance().getCurrentWorkDir() + zipEntryName);
+                    out = new FileOutputStream(OpContext.getInstance().getCurrentWorkDir() + zipEntryName);
                     do {
                         len = in.read(tmpBuf);
                         if (len > 0) {
@@ -218,7 +217,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 }
             }
             //数据发送完毕断开连接
-            NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(this);
+            NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
         }
     }
 
@@ -236,6 +235,6 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
 
     @Override
     public void onCancel() {
-        NioClientFactory.getFactory().getNetTaskContainer().addUnExecTask(this);
+        NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
     }
 }

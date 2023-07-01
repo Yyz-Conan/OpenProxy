@@ -1,5 +1,10 @@
 package com.open.proxy.protocol;
 
+/**
+ * 生成拒绝访问的html响应
+ *
+ * @author yyz
+ */
 public class HtmlGenerator {
 
     private HtmlGenerator() {
@@ -23,10 +28,15 @@ public class HtmlGenerator {
      *
      * @return
      */
-    public static byte[] headDenialService() {
+    public static byte[] headDenyService(String interceptHost) {
         StringBuilder sb = new StringBuilder();
         sb.append("HTTP/1.1 503 Denial Service\r\n");
         sb.append("Proxy-agent: YYD-HttpProxy\r\n");
+        String context = createInterceptHtml(interceptHost);
+        sb.append("Content-Length: ");
+        sb.append(context.length());
+        sb.append("\r\n\r\n");
+        sb.append(context);
         sb.append("\r\n");
         return sb.toString().getBytes();
     }
@@ -37,7 +47,7 @@ public class HtmlGenerator {
      * @param interceptHost
      * @return
      */
-    public static byte[] createInterceptHtml(String interceptHost) {
+    public static String createInterceptHtml(String interceptHost) {
         StringBuilder builder = new StringBuilder();
         builder.append("<!DOCTYPE html>\n");
         builder.append("<html>\n");
@@ -52,6 +62,6 @@ public class HtmlGenerator {
         builder.append("</h1>");
         builder.append("</body>\n");
         builder.append("</html>\n");
-        return builder.toString().getBytes();
+        return builder.toString();
     }
 }

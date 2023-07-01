@@ -6,10 +6,10 @@ import com.jav.net.component.joggle.ICacheComponent;
 import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
-import com.open.proxy.connect.AbsClient;
-import com.open.proxy.connect.DecryptionReceiver;
-import com.open.proxy.connect.EncryptionSender;
+import com.open.proxy.connect.BindClientTask;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
+import com.open.proxy.connect.socks5.DecryptionReceiver;
+import com.open.proxy.connect.socks5.EncryptionSender;
 import com.open.proxy.connect.socks5.Socks5DecryptionReceiver;
 import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.protocol.HtmlGenerator;
@@ -19,7 +19,7 @@ import java.nio.channels.SocketChannel;
 /**
  * 连接代理服务端,作用于中转数据
  */
-public class Socks5TransmissionClient extends AbsClient implements INetReceiver<MultiByteBuffer> {
+public class Socks5TransmissionClient extends BindClientTask implements INetReceiver<MultiByteBuffer> {
 
     private ISocks5ProcessListener mListener;
     private String mRealHost;
@@ -48,7 +48,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         this.mRealPort = realPort;
         initCryption();
         sendRealTargetInfo(realHost, realPort);
-//        enableProxy();
+        //        enableProxy();
     }
 
     private void enableProxy() {
@@ -69,7 +69,6 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         receiver.setDataReceiver(this);
         setReceiver(receiver);
         NioSender sender = new NioSender();
-        sender.setSenderFeedback(this);
         setSender(sender);
     }
 
@@ -78,8 +77,8 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         EncryptionSender sender = getSender();
         ICacheComponent component = sender.getCacheComponent();
         component.addLastData(new MultiByteBuffer(targetInfo));
-//        sender.sendData(new MultiByteBuffer(targetInfo));
-        //发送完hello数据,切换tag(PACK_SOCKS5_DATA_TAG)用于中转数据
+        //        sender.sendData(new MultiByteBuffer(targetInfo));
+        // 发送完hello数据,切换tag(PACK_SOCKS5_DATA_TAG)用于中转数据
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
     }
 
@@ -90,8 +89,7 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
         decryptionReceiver.setDecodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
         setReceiver(decryptionReceiver);
         EncryptionSender sender = new EncryptionSender(true);
-        sender.setSenderFeedback(this);
-        //当前是远程服务端使用,第一个hello数据是 PACK_SOCKS5_HELLO_TAG 类型
+        // 当前是远程服务端使用,第一个hello数据是 PACK_SOCKS5_HELLO_TAG 类型
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_HELLO_TAG);
         setSender(sender);
     }
@@ -119,7 +117,12 @@ public class Socks5TransmissionClient extends AbsClient implements INetReceiver<
 
 
     @Override
-    public void onReceiveFullData(MultiByteBuffer buffer, Throwable throwable) {
+    public void onReceiveFullData(MultiByteBuffer buffer) {
         mListener.onDownStreamData(buffer);
+    }
+
+    @Override
+    public void onReceiveError(Throwable throwable) {
+
     }
 }

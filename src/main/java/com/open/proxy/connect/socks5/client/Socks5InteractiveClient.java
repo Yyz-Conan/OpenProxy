@@ -5,15 +5,11 @@ import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
-import com.open.proxy.OPContext;
-import com.open.proxy.connect.AbsClient;
-import com.open.proxy.connect.DecryptionReceiver;
-import com.open.proxy.connect.EncryptionSender;
-import com.open.proxy.connect.joggle.IRemoteClientCloseListener;
+import com.open.proxy.OpContext;
+import com.open.proxy.connect.BindClientTask;
+import com.open.proxy.connect.joggle.IBindClientListener;
 import com.open.proxy.connect.joggle.ISocks5ProcessListener;
-import com.open.proxy.connect.socks5.Socks5DecryptionReceiver;
-import com.open.proxy.connect.socks5.Socks5NetFactory;
-import com.open.proxy.connect.socks5.Socks5Receiver;
+import com.open.proxy.connect.socks5.*;
 import com.open.proxy.connect.socks5.server.Socks5Server;
 import com.open.proxy.intercept.ProxyFilterManager;
 import com.open.proxy.protocol.DataPacketTag;
@@ -27,7 +23,7 @@ import java.util.List;
 /**
  * sock5响应客户（支持用户名和密码校验）
  */
-public class Socks5InteractiveClient extends AbsClient implements ISocks5ProcessListener, IRemoteClientCloseListener {
+public class Socks5InteractiveClient extends BindClientTask implements ISocks5ProcessListener, IBindClientListener {
 
     private Socks5TransmissionClient transmissionClient;
     private boolean enableSocks5Proxy;
@@ -36,7 +32,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
 
     public Socks5InteractiveClient(SocketChannel channel) {
         super(channel, null);
-        ConfigFileEnvoy configFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+        ConfigFileEnvoy configFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
         enableSocks5Proxy = configFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_SOCKS5_PROXY);
         isServerMode = configFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);
         allowProxy = configFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ALLOW_PROXY);
@@ -45,19 +41,18 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
         if (isServerMode) {
-            //当前是服务模式，响应客户端代理转发请求,数据经过加密（非socks5格式数据）
+            // 当前是服务模式，响应客户端代理转发请求,数据经过加密（非socks5格式数据）
             Socks5DecryptionReceiver receiver = new Socks5DecryptionReceiver(this);
             receiver.setServerMode();
             DecryptionReceiver decryptionReceiver = receiver.getReceiver();
             decryptionReceiver.setDecodeTag(DataPacketTag.PACK_SOCKS5_HELLO_TAG);
             setReceiver(decryptionReceiver);
             EncryptionSender sender = new EncryptionSender(true);
-            sender.setSenderFeedback(this);
             sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
             sender.setChannel(getSelectionKey(), channel);
             setSender(sender);
         } else {
-            //当前是客户端模式，响应本地client代理,数据没经过加密(socks5格式数据交互)
+            // 当前是客户端模式，响应本地client代理,数据没经过加密(socks5格式数据交互)
             Socks5Receiver receiver = new Socks5Receiver(this);
             setReceiver(receiver.getReceiver());
             try {
@@ -68,7 +63,6 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
             }
             NioSender sender = new NioSender();
             sender.setChannel(getSelectionKey(), channel);
-            sender.setSenderFeedback(this);
             setSender(sender);
         }
         LogDog.d("<-x_proxy_socks5-> Socks5LocalClient has com.open.proxy.connect " + " [ com.open.proxy.connect count = " + Socks5Server.localConnectCount.incrementAndGet() + " ] ");
@@ -80,12 +74,12 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
             LogDog.d("<-x_proxy_socks5-> Socks5LocalClient close host =  " + transmissionClient.getRealHost() + ":" + transmissionClient.getRealPort());
         }
         LogDog.d("<-x_proxy_socks5-> Socks5LocalClient has close " + " [ com.open.proxy.connect count = " + Socks5Server.localConnectCount.decrementAndGet() + " ] ");
-        Socks5NetFactory.getFactory().getNetTaskContainer().addUnExecTask(transmissionClient);
+        Socks5NetFactory.getFactory().getNetTaskComponent().addUnExecTask(transmissionClient);
     }
 
     @Override
     public Socks5Generator.Socks5Verification onClientSupportMethod(List<Socks5Generator.Socks5Verification> methods) {
-        //响应不需要用户和密码验证
+        // 响应不需要用户和密码验证
         Socks5Generator.Socks5Verification choiceMethod = methods.get(0);
         getSender().sendData(new MultiByteBuffer(Socks5Generator.buildVerVerificationMethodResponse(choiceMethod)));
         return choiceMethod;
@@ -93,7 +87,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
 
     @Override
     public boolean onVerification(String userName, String password) {
-        //响应通过校验
+        // 响应通过校验
         LogDog.d("<-x_proxy_socks5-> Socks5LocalClient verification client userName = " + userName + " password = " + password);
         getSender().sendData(new MultiByteBuffer(Socks5Generator.buildVerVerificationResponse()));
         return true;
@@ -119,20 +113,20 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
             isNeedProxy = ProxyFilterManager.getInstance().isNeedProxy(targetAddress);
         }
         if (enableSocks5Proxy && !isServerMode && isNeedProxy) {
-            //当前开启代理，而且是客户端模式,连接远程代理服务,数据经过加密（非socks5格式数据）
+            // 当前开启代理，而且是客户端模式,连接远程代理服务,数据经过加密（非socks5格式数据）
             transmissionClient = new Socks5TransmissionClient(this, targetAddress, targetPort);
-            //获取配置数据,连接代理服务端
-            ConfigFileEnvoy configFileEnvoy = OPContext.getInstance().getConfigFileEnvoy();
+            // 获取配置数据,连接代理服务端
+            ConfigFileEnvoy configFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
             String remoteHost = configFileEnvoy.getValue(IConfigKey.CONFIG_REMOTE_SOCKS5_PROXY_HOST);
             int remotePort = configFileEnvoy.getIntValue(IConfigKey.CONFIG_REMOTE_SOCKS5_PROXY_PORT);
             transmissionClient.setAddress(remoteHost, remotePort);
         } else {
-            //不走代理（客户端模式或者服务端模式）,连接真实目标服务,数据不经过加密（非socks5格式数据）
+            // 不走代理（客户端模式或者服务端模式）,连接真实目标服务,数据不经过加密（非socks5格式数据）
             transmissionClient = new Socks5TransmissionClient(this);
             transmissionClient.setAddress(targetAddress, targetPort);
         }
-        transmissionClient.setOnCloseListener(this);
-        Socks5NetFactory.getFactory().getNetTaskContainer().addUnExecTask(transmissionClient);
+        transmissionClient.setBindClientListener(this);
+        Socks5NetFactory.getFactory().getNetTaskComponent().addUnExecTask(transmissionClient);
     }
 
     /**
@@ -142,7 +136,7 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
      */
     @Override
     public void onUpstreamData(MultiByteBuffer buffer) {
-        //如果是服务端模式,则把数据发给真实目录服务端
+        // 如果是服务端模式,则把数据发给真实目录服务端
         transmissionClient.getSender().sendData(buffer);
     }
 
@@ -157,7 +151,22 @@ public class Socks5InteractiveClient extends AbsClient implements ISocks5Process
     }
 
     @Override
-    public void onClientClose(String host) {
-        Socks5NetFactory.getFactory().getNetTaskContainer().addUnExecTask(this);
+    public void onBindClientByReady(String requestId) {
+
+    }
+
+    @Override
+    public void onBindClientByError(String requestId) {
+
+    }
+
+    @Override
+    public void onBindClientData(String requestId, MultiByteBuffer buffer) {
+
+    }
+
+    @Override
+    public void onBindClientClose(String requestId) {
+        Socks5NetFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
     }
 }

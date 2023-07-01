@@ -1,4 +1,4 @@
-package com.open.proxy.connect;
+package com.open.proxy.connect.socks5;
 
 
 import com.jav.common.util.IoEnvoy;

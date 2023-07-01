@@ -8,11 +8,14 @@ import java.util.List;
 
 /**
  * socks5交互流程回调接口
+ *
+ * @author yyz
  */
 public interface ISocks5ProcessListener {
 
     /**
      * 回调客户端支持的加密方法
+     *
      * @param methods 支持的加密集
      * @return 返回选择后的加密
      */
@@ -20,20 +23,23 @@ public interface ISocks5ProcessListener {
 
     /**
      * 校验socks5客户端的合法信息
+     *
      * @param userName 用户名
-     * @param password  密码
+     * @param password 密码
      * @return true为校验通过
      */
     boolean onVerification(String userName, String password);
 
     /**
      * 回报代理socks5客户端命令处理状态
+     *
      * @param status
      */
     void onReportCommandStatus(Socks5Generator.Socks5CommandStatus status);
 
     /**
      * 提取socks5代理目标地址
+     *
      * @param targetAddress
      * @param targetPort
      */
