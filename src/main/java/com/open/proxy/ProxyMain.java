@@ -7,12 +7,14 @@ import com.jav.common.util.NetUtils;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioServerFactory;
+import com.jav.net.security.channel.SecurityChannelBoot;
 import com.jav.net.security.channel.SecurityChannelContext;
-import com.jav.net.security.channel.SecurityChannelManager;
 import com.jav.net.security.guard.IpBlackListClearTimerTask;
 import com.jav.thread.executor.TaskExecutorPoolManager;
-import com.open.proxy.connect.http.server.MultipleProxyServer;
 import com.open.proxy.intercept.*;
+import com.open.proxy.server.http.server.MultipleProxyServer;
+import com.open.proxy.server.sync.SecuritySyncBoot;
+import com.open.proxy.server.sync.SecuritySyncContext;
 
 import java.util.Map;
 
@@ -110,8 +112,8 @@ public class ProxyMain {
         ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
         String host = cFileEnvoy.getValue(IConfigKey.CONFIG_TRANS_SERVER_HOST);
         int proxyPort = cFileEnvoy.getIntValue(IConfigKey.CONFIG_TRANS_SERVER_PORT);
-        String updatePort = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_SERVER_PORT);
-        int socks5Port = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SOCKS5_SERVER_PORT);
+//        String updatePort = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_SERVER_PORT);
+//        int socks5Port = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SOCKS5_SERVER_PORT);
         int syncPort = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SYNC_SERVER_PORT);
 
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
@@ -121,13 +123,15 @@ public class ProxyMain {
             proxyPort = defaultProxyPort;
         }
 
-        if (socks5Port == 0) {
-            socks5Port = defaultSocks5Port;
-        }
+//        if (socks5Port == 0) {
+//            socks5Port = defaultSocks5Port;
+//        }
 
         // open proxy server
         MultipleProxyServer netProxyServer = new MultipleProxyServer();
         netProxyServer.setAddress(host, proxyPort);
+
+        MultipleProxyServer localProxyServer = null;
 
 
         // // open update file server
@@ -178,12 +182,22 @@ public class ProxyMain {
             ConfigFileEnvoy configFileEnvoy = new ConfigFileEnvoy();
             configFileEnvoy.analysis(syncServerFilePath);
             Map<String, String> syncServer = configFileEnvoy.getRawData();
-            builder.setSyncServer(syncServer);
-            builder.setLocalSyncInfo(host, proxyPort);
 
-            // SecuritySyncService netSyncService = new SecuritySyncService();
-            // netSyncService.setAddress(host, syncPort);
-            // builder.configBootSecurityServer(netSyncService);
+            SecuritySyncContext.Builder syncBuilder = new SecuritySyncContext.Builder();
+            syncBuilder.setSyncServer(syncServer);
+            syncBuilder.configSyncServer(host, syncPort);
+            syncBuilder.configProxyServer(host, proxyPort);
+            syncBuilder.setMachineId(machineId);
+            syncBuilder.setMachineList(machineFileEnvoy.getDatList());
+            SecuritySyncContext syncContext = syncBuilder.builder();
+
+            SecuritySyncBoot.getInstance().init(syncContext);
+            //启动同步服务
+            SecuritySyncBoot.getInstance().bootSyncServer();
+            //开始同步
+            SecuritySyncBoot.getInstance().connectSyncServer();
+
+
         } else {
             initProxyFilter();
             // 客户端模式才开启通道链接
@@ -195,13 +209,21 @@ public class ProxyMain {
 
                 builder.configConnectSecurityServer(remoteHost, remotePort);
 
-                MultipleProxyServer localProxyServer = new MultipleProxyServer();
+                localProxyServer = new MultipleProxyServer();
                 localProxyServer.setAddress(loHost, proxyPort);
                 builder.configBootSecurityServer(localProxyServer);
             }
         }
         SecurityChannelContext context = builder.builder();
-        SecurityChannelManager.getInstance().init(context);
+        netProxyServer.setContext(context);
+        if (localProxyServer != null) {
+            localProxyServer.setContext(context);
+        }
+        SecurityChannelBoot.getInstance().init(context);
+        SecurityChannelBoot.getInstance().startupSecurityServer();
+        if (!isServerMode) {
+            SecurityChannelBoot.getInstance().startConnectSecurityServer();
+        }
     }
 
     private static void shutdownHook() {
@@ -209,9 +231,9 @@ public class ProxyMain {
             NioClientFactory.destroy();
             NioServerFactory.destroy();
             WatchFileManager.getInstance().destroy();
-            SecurityChannelManager.getInstance().release();
+            SecurityChannelBoot.getInstance().release();
             TaskExecutorPoolManager.getInstance().destroyAll();
-            SecurityChannelManager.getInstance().release();
+            SecurityChannelBoot.getInstance().release();
             OpContext.getInstance().destroy();
         }));
     }
