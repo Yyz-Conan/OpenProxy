@@ -1,5 +1,6 @@
 package com.open.proxy;
 
+import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
 import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.common.util.DatFileEnvoy;
@@ -9,6 +10,7 @@ import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioServerFactory;
 import com.jav.net.security.channel.SecurityChannelBoot;
 import com.jav.net.security.channel.SecurityChannelContext;
+import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.guard.IpBlackListClearTimerTask;
 import com.jav.thread.executor.TaskExecutorPoolManager;
 import com.open.proxy.intercept.*;
@@ -152,25 +154,36 @@ public class ProxyMain {
 
         SecurityChannelContext.Builder builder = new SecurityChannelContext.Builder();
 
-        boolean isServerMode = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);
+        //配置服务
+        builder.configBootSecurityServer(netProxyServer);
+
+        //配置加密
         String encryption = cFileEnvoy.getValue(IConfigKey.CONFIG_ENCRYPTION_MODE);
-        builder.setEncryption(encryption, OpContext.getInstance().getDesPassword());
-        String machineId = cFileEnvoy.getValue(IConfigKey.CONFIG_MACHINE_ID);
-        builder.setMachineId(machineId);
         String publicKeyFileName = cFileEnvoy.getValue(IConfigKey.FILE_PUBLIC_KEY);
         String privateKeyFileName = cFileEnvoy.getValue(IConfigKey.FILE_PRIVATE_KEY);
         String publicFilePath = OpContext.getInstance().getEnvFilePath(publicKeyFileName);
         String privateFilePath = OpContext.getInstance().getEnvFilePath(privateKeyFileName);
-        builder.setInitRsaKeyFile(publicFilePath, privateFilePath);
+
+        ChannelEncryption.Builder encryptionBuilder = new ChannelEncryption.Builder();
+        encryptionBuilder.configInitEncryption(publicFilePath, privateFilePath);
+        ChannelEncryption channelEncryption;
+        if (EncryptionType.AES.getType().equals(encryption)) {
+            channelEncryption = encryptionBuilder.builderAES(OpContext.getInstance().getDesPassword());
+        } else {
+            channelEncryption = encryptionBuilder.builderBase64();
+        }
+
+        String machineId = cFileEnvoy.getValue(IConfigKey.CONFIG_MACHINE_ID);
+        builder.setMachineId(machineId);
+
         DatFileEnvoy machineFileEnvoy = OpContext.getInstance().getMachineFileEnvoy();
         builder.setMachineList(machineFileEnvoy.getDatList());
-
-        builder.setServerMode(isServerMode);
-        builder.configBootSecurityServer(netProxyServer);
 
         int channelNumber = cFileEnvoy.getIntValue(IConfigKey.CONFIG_CHANNEL_NUMBER);
         builder.setChannelNumber(channelNumber);
 
+        boolean isServerMode = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);
+        SecurityChannelContext channelContext;
 
         if (isServerMode) {
             boolean isEnableIpBlack = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_IP_BLACK);
@@ -197,6 +210,7 @@ public class ProxyMain {
             //开始同步
             SecuritySyncBoot.getInstance().connectSyncServer();
 
+            channelContext = builder.asServer(channelEncryption);
 
         } else {
             initProxyFilter();
@@ -213,13 +227,13 @@ public class ProxyMain {
                 localProxyServer.setAddress(loHost, proxyPort);
                 builder.configBootSecurityServer(localProxyServer);
             }
+            channelContext = builder.asClient(channelEncryption);
         }
-        SecurityChannelContext context = builder.builder();
-        netProxyServer.setContext(context);
+        netProxyServer.setContext(channelContext);
         if (localProxyServer != null) {
-            localProxyServer.setContext(context);
+            localProxyServer.setContext(channelContext);
         }
-        SecurityChannelBoot.getInstance().init(context);
+        SecurityChannelBoot.getInstance().init(channelContext);
         SecurityChannelBoot.getInstance().startupSecurityServer();
         if (!isServerMode) {
             SecurityChannelBoot.getInstance().startConnectSecurityServer();

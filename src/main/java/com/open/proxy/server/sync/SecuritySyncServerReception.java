@@ -1,5 +1,6 @@
 package com.open.proxy.server.sync;
 
+import com.jav.common.log.LogDog;
 import com.jav.net.security.util.SystemStatusTool;
 import com.jav.thread.executor.LoopTask;
 import com.jav.thread.executor.TaskExecutorPoolManager;
@@ -53,6 +54,7 @@ public class SecuritySyncServerReception extends SecuritySyncClient {
             long loadCount = SecuritySyncBoot.getInstance().getLocalServerLoadCount();
             byte loadAvg = SystemStatusTool.getSystemAvgLoad(loadCount);
             syncSender.requestSyncAvg(mContext.getMachineId(), mContext.getSyncPort(), loadAvg);
+            LogDog.i("## >>>> start sync mid = " + mContext.getMachineId() + " loadAvg = " + loadAvg + " <<<<<");
 
             try {
                 Thread.sleep(DELAY_TIME);
