@@ -1,8 +1,9 @@
 //本配置文件作用是拦截域名，拦截规则是请求域名包含有以下则拦截，!表示除外（支持热更新，保存则更新不需要重启）
 mozilla.com
-google.com
-youtube.com
-microsoft.com!docs.microsoft.com!go.microsoft.com!visualstudio.microsoft.com
+mozilla.net
+#google.com
+#youtube.com
+#microsoft.com!docs.microsoft.com!go.microsoft.com!visualstudio.microsoft.com
 s3m.mediav.com
 img-bss.csdn.net
 oscimg.oschina.net
@@ -13,11 +14,10 @@ c.02kdid.com
 c.93hdw9.com
 img.kukan5.com
 pic3.iqiyipic.com
-t.cn
 gss0.bdstatic.com
 sina.com-h-sina.com
 offlintab.firefoxchina.cn
-#firefox.com
+firefox.com
 nexus-websocket-a.intercom.io
 safebrowsing.googleapis.com
 adu.g-fox.cn
@@ -71,7 +71,6 @@ bjdgqx.com
 energy.com
 govzhuhai.cn
 10105115.com
-alicdn.com
 hnnzwhyy.com
 qwupoq.com
 oneyouxi.com.cn
@@ -79,7 +78,7 @@ ppslsa.com
 .gif
 yuwantu.xaysys.com
 showvip.bigdzh.com
-#hm.baidu.com
+hm.baidu.com
 zz.bdstatic.com
 show.suning.beer
 pv.dakawm.cc
@@ -90,5 +89,12 @@ lcdn.tsyndicate.com
 3336639.com
 3336636.com
 t.ckimg.xyz
-dakang-energy.com
-fliang.net
+venetrigni.com
+cdn.jsdelivr.net
+tracker.novage.com.ua
+google-analytics.com
+googletagmanager.com
+sb-inv1.com
+toutiaoimg.com
+cdnbye.com
+getpocket.com
