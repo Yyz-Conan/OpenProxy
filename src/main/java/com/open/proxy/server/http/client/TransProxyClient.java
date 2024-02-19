@@ -2,19 +2,20 @@ package com.open.proxy.server.http.client;
 
 
 import com.jav.common.log.LogDog;
-import com.jav.common.state.joggle.IStateMachine;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.common.track.SpiderEnvoy;
 import com.jav.common.util.ConfigFileEnvoy;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.INetReceiver;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OpContext;
 import com.open.proxy.server.BindClientTask;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -22,7 +23,7 @@ import java.nio.channels.SocketChannel;
  *
  * @author yyz
  */
-public class TransProxyClient extends BindClientTask implements INetReceiver<MultiByteBuffer> {
+public class TransProxyClient extends BindClientTask implements INetReceiver<MultiBuffer> {
 
     private String mRequestId;
 
@@ -56,28 +57,30 @@ public class TransProxyClient extends BindClientTask implements INetReceiver<Mul
     }
 
     @Override
-    protected <M extends IStateMachine> M getStatusMachine() {
+    protected IControlStateMachine<Integer> getStatusMachine() {
         return super.getStatusMachine();
     }
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        NioSender sender = new NioSender();
+        sender.setChannel(selectionKey, channel);
+        setSender(sender);
+
         NioReceiver receiver = new NioReceiver();
         receiver.setDataReceiver(this);
         setReceiver(receiver);
-        NioSender sender = new NioSender();
-        sender.setChannel(getSelectionKey(), channel);
-        setSender(sender);
 
         if (mBindListener != null) {
             mBindListener.onBindClientByReady(mRequestId);
         }
+
         SpiderEnvoy.getInstance().pinKeyProbe(TransProxyClient.this.toString(), "onBeReadyChannel");
 
     }
 
     @Override
-    public void onReceiveFullData(MultiByteBuffer buf) {
+    public void onReceiveFullData(MultiBuffer buf) {
         if (mBindListener != null) {
             mBindListener.onBindClientData(mRequestId, buf);
         }
@@ -86,7 +89,6 @@ public class TransProxyClient extends BindClientTask implements INetReceiver<Mul
 
     @Override
     public void onReceiveError(Throwable throwable) {
-
     }
 
     @Override

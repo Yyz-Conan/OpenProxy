@@ -19,7 +19,7 @@ public class ConfigFileChangeWatch extends BaseFileChangeWatch {
 
     @Override
     public void onTargetChange(String targetFileName) {
-        if (targetFileName.equals(mFileName)) {
+        if (targetFileName.startsWith(mFileName)) {
             ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
             cFileEnvoy.analysis(getTargetFile());
             LogDog.d(getTargetFile() + " the configuration file has been modified !!! ");

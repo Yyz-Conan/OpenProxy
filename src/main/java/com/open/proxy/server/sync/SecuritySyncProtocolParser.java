@@ -10,6 +10,7 @@ import com.open.proxy.server.sync.bean.SyncErrorType;
 import com.open.proxy.server.sync.joggle.ISyncServerEventCallBack;
 import com.open.proxy.server.sync.protocol.base.SyncOperateCode;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
@@ -31,22 +32,22 @@ public class SecuritySyncProtocolParser extends AbsSecurityProtocolParser {
     }
 
     @Override
-    public void parserReceiverData(String remoteHost, ByteBuffer decodeData) {
+    public void parserReceiverData(InetSocketAddress remoteAddress, ByteBuffer decodeData) {
         // 解析校验时间字段
-        parseCheckTime(remoteHost, decodeData);
+        parseCheckTime(remoteAddress, decodeData);
         // 解析cmd字段
         byte cmd = decodeData.get();
         // 解析校验machine id字段
-        String machineId = parseCheckMachineId(remoteHost, decodeData);
+        String machineId = parseCheckMachineId(remoteAddress, decodeData);
 
         if (cmd == SyncActivityCode.SYNC.getCode()) {
             if (!machineId.startsWith("S")) {
                 throw new IllegalStateException(SyncErrorType.EXP_SYNC_MACHINE_ID.getErrorMsg() + " machineId : " + machineId);
             }
             byte oCode = decodeData.get();
-            parserSync(oCode, machineId, decodeData);
+            parserSync(remoteAddress, oCode, machineId, decodeData);
         } else {
-            reportPolicyProcessor(remoteHost, UnusualBehaviorType.EXP_ACTIVITY);
+            reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_ACTIVITY);
         }
     }
 
@@ -58,7 +59,7 @@ public class SecuritySyncProtocolParser extends AbsSecurityProtocolParser {
      * @param machineId
      * @param data
      */
-    private void parserSync(byte oCode, String machineId, ByteBuffer data) {
+    private void parserSync(InetSocketAddress remoteAddress, byte oCode, String machineId, ByteBuffer data) {
         byte realOperateCode = (byte) (oCode & (~ConstantCode.REP_EXCEPTION_CODE));
         if (realOperateCode == SyncOperateCode.SYNC_AVG.getCode()
                 || realOperateCode == SyncOperateCode.RESPOND_SYNC_AVG.getCode()) {
@@ -69,7 +70,7 @@ public class SecuritySyncProtocolParser extends AbsSecurityProtocolParser {
                 if (status != ConstantCode.REP_SUCCESS_CODE) {
                     return;
                 }
-                mSyncEventCallBack.onRespondSyncCallBack(realOperateCode, proxyPort, machineId, loadData);
+                mSyncEventCallBack.onRespondSyncCallBack(remoteAddress, realOperateCode, proxyPort, machineId, loadData);
                 LogDog.w("## receive sync avg data , server machine id : " + machineId
                         + " proxyPort : " + proxyPort + " loadData : " + loadData);
             }
@@ -89,6 +90,7 @@ public class SecuritySyncProtocolParser extends AbsSecurityProtocolParser {
         } else if (realOperateCode == SyncOperateCode.RESPOND_SYNC_MID.getCode()) {
             byte[] context = getContextData(data);
             if (context == null) {
+                LogDog.e("## channel state : " + SyncErrorType.EXP_SYNC_DATA.getErrorMsg());
                 throw new RuntimeException(SyncErrorType.EXP_SYNC_DATA.getErrorMsg());
             }
             String clientMachineId = new String(context);
@@ -99,6 +101,7 @@ public class SecuritySyncProtocolParser extends AbsSecurityProtocolParser {
                 mSyncEventCallBack.onRespondSyncMidCallBack(status, clientMachineId);
             }
         } else {
+            LogDog.e("## channel state : " + UnusualBehaviorType.EXP_OPERATE_CODE.getErrorMsg());
             throw new RuntimeException(UnusualBehaviorType.EXP_OPERATE_CODE.getErrorMsg());
         }
     }

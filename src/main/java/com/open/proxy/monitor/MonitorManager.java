@@ -1,7 +1,12 @@
 package com.open.proxy.monitor;
 
 
+import com.jav.common.log.LogDog;
+import com.jav.net.security.channel.base.ChannelTrafficInfo;
+import com.jav.net.security.guard.SecurityChannelTraffic;
 import com.jav.thread.executor.LoopTask;
+import com.jav.thread.executor.LoopTaskExecutor;
+import com.jav.thread.executor.TaskContainer;
 import com.jav.thread.executor.TaskExecutorPoolManager;
 import com.open.proxy.OpContext;
 
@@ -10,22 +15,22 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 public final class MonitorManager {
 
     private static final int SLEEP_TIME = 2000;
 
-    private CoreTask mCoreTask;
+    private MonitorTask mMonitorTask;
 
     private MonitorManager() {
-        mCoreTask = new CoreTask();
+        mMonitorTask = new MonitorTask();
     }
 
-    private int mConnectCount = 0;
-    private int mNetUp = 1;
-    private int mNetDown = 1;
 
-    private class CoreTask extends LoopTask {
+    private class MonitorTask extends LoopTask {
+
+        private TaskContainer mTaskContainer;
 
         private FileChannel mChannel;
         private ByteBuffer mBuffer;
@@ -56,7 +61,7 @@ public final class MonitorManager {
         @Override
         protected void onRunLoopTask() {
             if (mChannel == null) {
-                TaskExecutorPoolManager.getInstance().closeTask(mCoreTask);
+                TaskExecutorPoolManager.getInstance().closeTask(mMonitorTask);
                 return;
             }
             try {
@@ -65,33 +70,52 @@ public final class MonitorManager {
                 e.printStackTrace();
             }
             mBuffer.clear();
-            try {
-                String countStr = String.format("             当前链接数量%d         \n", mConnectCount);
-                String speedStr = String.format("     上行速度 %d kb/s    下行速度 %d kb/s      \n", getSpeed(mNetUp), getSpeed(mNetDown));
-                mBuffer.put("------------------------------------------\n".getBytes());
-                mBuffer.put(countStr.getBytes());
-                mBuffer.put(speedStr.getBytes());
-                mBuffer.put("------------------------------------------\n".getBytes());
+            List<ChannelTrafficInfo> allInfo = SecurityChannelTraffic.getInstance().getAllChannelTrafficInfo();
+            if (allInfo != null) {
+                for (ChannelTrafficInfo info : allInfo) {
+                    if (info == null) {
+                        continue;
+                    }
+                    String line_one = "---------------- MachineId = " + info.getMachineId() + " ----------------\n";
+                    String line_two = "                           Out Traffic = " + info.getOutTrafficKB() / (SLEEP_TIME / 1000) + "kb/sec\n";
+                    String line_three = "                           In Traffic = " + info.getInTrafficKB() / (SLEEP_TIME / 1000) + "kb/sec\n";
+                    String line_four = "------------------------------------------------------------------------------\n";
+                    mBuffer.put(line_one.getBytes());
+                    mBuffer.put(line_two.getBytes());
+                    mBuffer.put(line_three.getBytes());
+                    mBuffer.put(line_four.getBytes());
+                    info.reset();
+                }
                 mBuffer.flip();
-                mChannel.write(mBuffer);
-            } catch (Exception e) {
-                e.printStackTrace();
+                try {
+                    mChannel.write(mBuffer);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-            mConnectCount++;
-            try {
-                Thread.sleep(SLEEP_TIME);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+            LoopTaskExecutor executor = mTaskContainer.getTaskExecutor();
+            executor.waitTask(SLEEP_TIME);
+        }
+
+        void startTimer() {
+            if (mTaskContainer == null) {
+                mTaskContainer = new TaskContainer(this);
+                LoopTaskExecutor executor = mTaskContainer.getTaskExecutor();
+                executor.startTask();
+                LogDog.i("#MM# start monitor net traffic !");
+            }
+        }
+
+        void stopTimer() {
+            if (mTaskContainer != null) {
+                LoopTaskExecutor executor = mTaskContainer.getTaskExecutor();
+                executor.stopTask();
+                LogDog.i("#MM# stop monitor net traffic !");
             }
         }
     }
 
-    private int getSpeed(int value) {
-        if (value <= 0) {
-            return 0;
-        }
-        return value / 2 / 1024;
-    }
 
     private final static class InnerClass {
         private final static MonitorManager sPage = new MonitorManager();
@@ -102,19 +126,12 @@ public final class MonitorManager {
     }
 
     public void start() {
-        TaskExecutorPoolManager.getInstance().runTask(mCoreTask);
+        mMonitorTask.startTimer();
     }
 
     public void stop() {
-        TaskExecutorPoolManager.getInstance().closeTask(mCoreTask);
+        mMonitorTask.stopTimer();
     }
 
-    public void updateConnectCount(int count) {
-        mConnectCount = count;
-    }
 
-    public void updateSpeed(int netUp, int netDown) {
-        mNetUp = netUp;
-        mNetDown = netDown;
-    }
 }

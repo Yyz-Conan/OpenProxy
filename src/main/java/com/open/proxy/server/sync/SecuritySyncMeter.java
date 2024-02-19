@@ -2,25 +2,28 @@ package com.open.proxy.server.sync;
 
 import com.jav.common.cryption.DataSafeManager;
 import com.jav.common.cryption.joggle.EncryptionType;
-import com.jav.common.cryption.joggle.IDecryptComponent;
-import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.net.nio.NioClientFactory;
-import com.jav.net.security.channel.SecurityReceiver;
-import com.jav.net.security.channel.SecuritySender;
-import com.jav.net.security.channel.base.AbsSecurityMeter;
+import com.jav.common.cryption.joggle.ICipherComponent;
+import com.jav.common.log.LogDog;
 import com.jav.net.security.util.SystemStatusTool;
-import com.open.proxy.server.sync.bean.SecuritySyncEntity;
+import com.jav.thread.executor.LoopTask;
+import com.jav.thread.executor.LoopTaskExecutor;
+import com.jav.thread.executor.TaskContainer;
+import com.open.proxy.server.sync.bean.SecuritySyncPayloadData;
 import com.open.proxy.server.sync.joggle.IServerSyncStatusListener;
 import com.open.proxy.server.sync.joggle.ISyncServerEventCallBack;
 import com.open.proxy.server.sync.protocol.base.SyncOperateCode;
+
+import java.net.InetSocketAddress;
+import java.util.*;
 
 /**
  * 分布式同步服务meter,主要是代理service的服务提供接口调用
  *
  * @author yyz
  */
-public class SecuritySyncMeter extends AbsSecurityMeter {
+public class SecuritySyncMeter {
 
+    private SecuritySyncContext mContext;
 
     /**
      * 数据安全管理，提供加解密
@@ -30,17 +33,15 @@ public class SecuritySyncMeter extends AbsSecurityMeter {
     /**
      * 协议解析器
      */
-    private SecuritySyncProtocolParser mProtocolParser;
+    private final SecuritySyncProtocolParser mProtocolParser;
 
+    private SecuritySyncSender mSyncSender;
 
-    /**
-     * 通讯
-     */
-    private NioClientFactory mClientFactory;
+    private TimerSync mTimerSync;
 
 
     public SecuritySyncMeter(SecuritySyncContext context) {
-
+        mContext = context;
         mDataSafeManager = new DataSafeManager();
         mProtocolParser = new SecuritySyncProtocolParser(context);
         SecuritySyncPolicyProcessor policyProcessor = new SecuritySyncPolicyProcessor(context);
@@ -48,9 +49,6 @@ public class SecuritySyncMeter extends AbsSecurityMeter {
 
         ReceiveProxy receiveProxy = new ReceiveProxy();
         mProtocolParser.setSyncEventCallBack(receiveProxy);
-
-        mClientFactory = new NioClientFactory();
-        mClientFactory.open();
     }
 
 
@@ -60,29 +58,28 @@ public class SecuritySyncMeter extends AbsSecurityMeter {
     private class ReceiveProxy implements ISyncServerEventCallBack {
 
         @Override
-        public void onRespondSyncCallBack(byte operateCode, int proxyPort, String machineId, byte loadCount) {
+        public void onRespondSyncCallBack(InetSocketAddress remoteAddress, byte operateCode, int proxyPort, String machineId, byte loadCount) {
 
             // 保存远程服务的负载信息
             SecuritySyncBoot.getInstance().updateSyncData(machineId, proxyPort, loadCount);
-            //获取当前服务链接数量和服务端口号
-            int serverProxyPort = 0;
-            long serverLoadCount = 0;
-            String serverMachineId = null;
-            SecuritySyncEntity localSyncInfo = SecuritySyncBoot.getInstance().getLocalSyncInfo();
-            if (localSyncInfo != null) {
-                serverMachineId = localSyncInfo.getMachineId();
-                serverProxyPort = localSyncInfo.getProxyPort();
-                serverLoadCount = localSyncInfo.getLoadCount();
-            }
-
+            //判断是否是响应端，如果是不再发下面消息，不然就进入死循环
             if (operateCode == SyncOperateCode.RESPOND_SYNC_AVG.getCode()) {
                 return;
             }
+
+            SecuritySyncPayloadData localSyncInfo = SecuritySyncBoot.getInstance().getNativeSyncInfo();
+            if (localSyncInfo == null) {
+                return;
+            }
+            //获取当前服务链接数量和服务端口号
+            String serverMachineId = localSyncInfo.getMachineId();
+            int serverProxyPort = localSyncInfo.getPort();
+            long serverLoadCount = localSyncInfo.getLoadCount();
+
             // 响应本地服务的负载信息
-            SecuritySyncSender syncSender = getSender();
             byte loadAvg = SystemStatusTool.getSystemAvgLoad(serverLoadCount);
             localSyncInfo.updateAvgLoad(loadAvg);
-            syncSender.respondSyncAvg(serverMachineId, serverProxyPort, loadAvg);
+            mSyncSender.respondSyncAvg(remoteAddress, serverMachineId, serverProxyPort, loadAvg);
         }
 
         @Override
@@ -94,44 +91,116 @@ public class SecuritySyncMeter extends AbsSecurityMeter {
         }
     }
 
-    @Override
     protected EncryptionType initEncryptionType() {
         return EncryptionType.BASE64;
     }
 
 
-    @Override
-    protected void onChannelReady(SecuritySender sender, SecurityReceiver receiver) {
-        super.onChannelReady(sender, receiver);
+    protected void onChannelReady(SecuritySyncSender sender, SecuritySyncReceiver receiver) {
+        this.mSyncSender = sender;
 
+        //初始化加密方式
         EncryptionType encryptionType = initEncryptionType();
-        initEncryptionType(encryptionType);
+        mDataSafeManager.init(encryptionType);
+        ICipherComponent cipherComponent = mDataSafeManager.getCipherComponent();
+
+        // 设置加密方式
+        sender.setEncryptComponent(cipherComponent);
+        receiver.setDecryptComponent(cipherComponent);
 
         // 设置协议解析器
         receiver.setProtocolParser(mProtocolParser);
-        //重置接收,断线重连接需要恢复状态
-        mRealReceiver.reset();
+
+        //初始化镜像
+        SecurityServerSyncImage.getInstance().init(mSyncSender);
+
+        //开始与其他服务同步
+        connectSyncServer();
     }
 
     /**
-     * 初始化加密方式
-     *
-     * @param encryption 加密方式
+     * 加载需要同步的服务列表
      */
-    protected void initEncryptionType(EncryptionType encryption) {
-        // 发送完init数据,开始切换加密方式
-        mDataSafeManager.init(encryption);
-        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
-        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
+    public void connectSyncServer() {
+        Map<String, String> syncServer = mContext.getSyncServerList();
+        if (syncServer == null || syncServer.isEmpty()) {
+            return;
+        }
+        Map<String, SecuritySyncPayloadData> syncInfo = SecuritySyncBoot.getInstance().getRemoteSyncInfo();
 
-        // 设置加密方式
-        mRealSender.setEncryptComponent(encryptComponent);
-        mRealReceiver.setDecryptComponent(decryptComponent);
+        List<String> syncMachineList = mContext.getMachineList();
+        Set<Map.Entry<String, String>> entrySet = syncServer.entrySet();
+        for (Map.Entry<String, String> entry : entrySet) {
+            String value = entry.getValue();
+            String[] arrays = value.split(":");
+            if (arrays.length != 2) {
+                continue;
+            }
+            String machineId = entry.getKey();
+            syncMachineList.add(machineId);
+            SecuritySyncPayloadData entity = new SecuritySyncPayloadData(machineId, arrays[0]);
+            try {
+                entity.setPort(Integer.parseInt(arrays[1]));
+                syncInfo.put(machineId, entity);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        mTimerSync = new TimerSync();
+        mTimerSync.startTimer();
+    }
+
+    private class TimerSync extends LoopTask {
+
+        private static final int DELAY_TIME = 5 * 60 * 1000;
+
+        private TaskContainer mTaskContainer;
+
+        @Override
+        protected void onRunLoopTask() {
+            Map<String, SecuritySyncPayloadData> syncInfo = SecuritySyncBoot.getInstance().getRemoteSyncInfo();
+            if (syncInfo.isEmpty()) {
+                stopTimer();
+                return;
+            }
+
+            long loadCount = SecuritySyncBoot.getInstance().getNativeServerLoadCount();
+            byte loadAvg = SystemStatusTool.getSystemAvgLoad(loadCount);
+            Collection<SecuritySyncPayloadData> values = syncInfo.values();
+            Iterator<SecuritySyncPayloadData> iterator = values.iterator();
+            while (iterator.hasNext()) {
+                SecuritySyncPayloadData payloadData = iterator.next();
+                InetSocketAddress target = new InetSocketAddress(payloadData.getHost(), payloadData.getPort());
+                mSyncSender.requestSyncAvg(target, mContext.getMachineId(), mContext.getProxyPort(), loadAvg);
+            }
+            LogDog.i("## >>>> start sync mid = " + mContext.getMachineId() + " loadAvg = " + loadAvg + " <<<<<");
+
+            LoopTaskExecutor loopTaskExecutor = mTaskContainer.getTaskExecutor();
+            loopTaskExecutor.waitTask(DELAY_TIME);
+        }
+
+        public void startTimer() {
+            if (mTaskContainer == null) {
+                mTaskContainer = new TaskContainer(this);
+                LoopTaskExecutor loopTaskExecutor = mTaskContainer.getTaskExecutor();
+                loopTaskExecutor.startTask();
+            }
+        }
+
+        public void stopTimer() {
+            if (mTaskContainer != null) {
+                LoopTaskExecutor loopTaskExecutor = mTaskContainer.getTaskExecutor();
+                loopTaskExecutor.stopTask();
+            }
+        }
     }
 
 
-    @Override
     protected void onChannelInvalid() {
-        super.onChannelInvalid();
+        if (mTimerSync != null) {
+            mTimerSync.stopTimer();
+        }
     }
+
 }

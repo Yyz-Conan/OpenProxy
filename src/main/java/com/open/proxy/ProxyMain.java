@@ -6,17 +6,18 @@ import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.common.util.DatFileEnvoy;
 import com.jav.common.util.NetUtils;
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.nio.NioClientFactory;
-import com.jav.net.nio.NioServerFactory;
 import com.jav.net.security.channel.SecurityChannelBoot;
 import com.jav.net.security.channel.SecurityChannelContext;
-import com.jav.net.security.channel.joggle.ChannelEncryption;
+import com.jav.net.security.channel.base.ChannelEncryption;
 import com.jav.net.security.guard.IpBlackListClearTimerTask;
 import com.jav.thread.executor.TaskExecutorPoolManager;
 import com.open.proxy.intercept.*;
+import com.open.proxy.monitor.MonitorManager;
 import com.open.proxy.server.http.server.MultipleProxyServer;
+import com.open.proxy.server.socks5.server.Socks5Server;
 import com.open.proxy.server.sync.SecuritySyncBoot;
 import com.open.proxy.server.sync.SecuritySyncContext;
+import com.open.proxy.server.update.UpdateServer;
 
 import java.util.Map;
 
@@ -35,6 +36,7 @@ public class ProxyMain {
     // 测试网址
     // http://www.bifas.cn/n144925.htm
     // http://www.httpclient.cn
+
 
     public static void main(String[] args) {
         init();
@@ -100,6 +102,10 @@ public class ProxyMain {
         // 添加监控cfg配置文件的修改
         ConfigFileChangeWatch cfgFileWatch = new ConfigFileChangeWatch(envPath, IConfigKey.FILE_CONFIG);
         WatchFileManager.getInstance().addWatchFile(cfgFileWatch);
+
+        String proxyFileName = cFileEnvoy.getValue(IConfigKey.FILE_PROXY);
+        ProxyFileChangeWatch proxyFileWatch = new ProxyFileChangeWatch(envPath, proxyFileName);
+        WatchFileManager.getInstance().addWatchFile(proxyFileWatch);
     }
 
     private static void initProxyFilter() {
@@ -112,10 +118,13 @@ public class ProxyMain {
 
     private static void startServer() {
         ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
+
+        SecurityChannelContext.Builder builder = new SecurityChannelContext.Builder();
+
         String host = cFileEnvoy.getValue(IConfigKey.CONFIG_TRANS_SERVER_HOST);
         int proxyPort = cFileEnvoy.getIntValue(IConfigKey.CONFIG_TRANS_SERVER_PORT);
-//        String updatePort = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_SERVER_PORT);
-//        int socks5Port = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SOCKS5_SERVER_PORT);
+
+
         int syncPort = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SYNC_SERVER_PORT);
 
         if (StringEnvoy.isEmpty(host) || "auto".equals(host)) {
@@ -125,37 +134,33 @@ public class ProxyMain {
             proxyPort = defaultProxyPort;
         }
 
-//        if (socks5Port == 0) {
-//            socks5Port = defaultSocks5Port;
-//        }
-
-        // open proxy server
+        //配置http proxy 服务端
         MultipleProxyServer netProxyServer = new MultipleProxyServer();
         netProxyServer.setAddress(host, proxyPort);
+        builder.addSecurityServerStarter(netProxyServer);
 
-        MultipleProxyServer localProxyServer = null;
+        //配置socks5 server
+        boolean enableSocks5Proxy = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_SOCKS5_PROXY);
+        if (enableSocks5Proxy) {
+            int socks5Port = cFileEnvoy.getIntValue(IConfigKey.CONFIG_SOCKS5_SERVER_PORT);
+            if (socks5Port == 0) {
+                socks5Port = defaultSocks5Port;
+            }
+            // socks5 proxy server
+            Socks5Server socks5Server = new Socks5Server();
+            socks5Server.setAddress(loHost, socks5Port);
+            builder.addSecurityServerStarter(socks5Server);
+        }
 
+        //配置update server
+        boolean enableUpdateServer = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_UPDATE_SERVER);
+        if (enableUpdateServer) {
+            String updatePort = cFileEnvoy.getValue(IConfigKey.CONFIG_UPDATE_SERVER_PORT);
+            UpdateServer updateServer = new UpdateServer();
+            updateServer.setAddress(host, Integer.parseInt(updatePort));
+            builder.addSecurityServerStarter(updateServer);
+        }
 
-        // // open update file server
-        // UpdateServer updateServer = new UpdateServer();
-        // updateServer.setAddress(host, Integer.parseInt(updatePort));
-        // NioServerFactory.getFactory().getNetTaskComponent().addExecTask(updateServer);
-        // updateServer = new UpdateServer();
-        // updateServer.setAddress(loHost, Integer.parseInt(updatePort));
-        // NioServerFactory.getFactory().getNetTaskComponent().addExecTask(updateServer);
-        //
-        // // open com.open.proxy.connect.socks5 proxy server
-        // Socks5Server socks5Server = new Socks5Server();
-        // socks5Server.setAddress(host, socks5Port);
-        // NioServerFactory.getFactory().getNetTaskComponent().addExecTask(socks5Server);
-        // socks5Server = new Socks5Server();
-        // socks5Server.setAddress(loHost, socks5Port);
-        // NioServerFactory.getFactory().getNetTaskComponent().addExecTask(socks5Server);
-
-        SecurityChannelContext.Builder builder = new SecurityChannelContext.Builder();
-
-        //配置服务
-        builder.configBootSecurityServer(netProxyServer);
 
         //配置加密
         String encryption = cFileEnvoy.getValue(IConfigKey.CONFIG_ENCRYPTION_MODE);
@@ -165,10 +170,11 @@ public class ProxyMain {
         String privateFilePath = OpContext.getInstance().getEnvFilePath(privateKeyFileName);
 
         ChannelEncryption.Builder encryptionBuilder = new ChannelEncryption.Builder();
+        //init 默认使用 RSA
         encryptionBuilder.configInitEncryption(publicFilePath, privateFilePath);
         ChannelEncryption channelEncryption;
         if (EncryptionType.AES.getType().equals(encryption)) {
-            channelEncryption = encryptionBuilder.builderAES(OpContext.getInstance().getDesPassword());
+            channelEncryption = encryptionBuilder.builderAES(OpContext.getInstance().getAESPassword());
         } else {
             channelEncryption = encryptionBuilder.builderBase64();
         }
@@ -183,6 +189,7 @@ public class ProxyMain {
         builder.setChannelNumber(channelNumber);
 
         boolean isServerMode = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);
+        boolean isEnableProxy = false;
         SecurityChannelContext channelContext;
 
         if (isServerMode) {
@@ -197,25 +204,24 @@ public class ProxyMain {
             Map<String, String> syncServer = configFileEnvoy.getRawData();
 
             SecuritySyncContext.Builder syncBuilder = new SecuritySyncContext.Builder();
-            syncBuilder.setSyncServer(syncServer);
+            syncBuilder.configSyncServer(syncServer);
             syncBuilder.configSyncServer(host, syncPort);
             syncBuilder.configProxyServer(host, proxyPort);
             syncBuilder.setMachineId(machineId);
-            syncBuilder.setMachineList(machineFileEnvoy.getDatList());
-            SecuritySyncContext syncContext = syncBuilder.builder();
 
-            SecuritySyncBoot.getInstance().init(syncContext);
             //启动同步服务
+            SecuritySyncContext syncContext = syncBuilder.builder();
+            SecuritySyncBoot.getInstance().init(syncContext);
             SecuritySyncBoot.getInstance().bootSyncServer();
-            //开始同步
-            SecuritySyncBoot.getInstance().connectSyncServer();
 
             channelContext = builder.asServer(channelEncryption);
+            netProxyServer.setContext(channelContext);
 
         } else {
             initProxyFilter();
             // 客户端模式才开启通道链接
-            boolean isEnableProxy = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_PROXY);
+            isEnableProxy = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_ENABLE_PROXY);
+            MultipleProxyServer localProxyServer = null;
             if (isEnableProxy) {
                 // init proxy channel
                 String remoteHost = cFileEnvoy.getValue(IConfigKey.CONFIG_REMOTE_PROXY_HOST);
@@ -223,31 +229,34 @@ public class ProxyMain {
 
                 builder.configConnectSecurityServer(remoteHost, remotePort);
 
+                //配置本地 http proxy 客户端
                 localProxyServer = new MultipleProxyServer();
                 localProxyServer.setAddress(loHost, proxyPort);
-                builder.configBootSecurityServer(localProxyServer);
+                builder.addSecurityServerStarter(localProxyServer);
             }
             channelContext = builder.asClient(channelEncryption);
+            if (localProxyServer != null) {
+                localProxyServer.setContext(channelContext);
+            }
+            netProxyServer.setContext(channelContext);
         }
-        netProxyServer.setContext(channelContext);
-        if (localProxyServer != null) {
-            localProxyServer.setContext(channelContext);
-        }
+
+
         SecurityChannelBoot.getInstance().init(channelContext);
         SecurityChannelBoot.getInstance().startupSecurityServer();
-        if (!isServerMode) {
-            SecurityChannelBoot.getInstance().startConnectSecurityServer();
+        if (!isServerMode && isEnableProxy) {
+            SecurityChannelBoot.getInstance().startConnectSecurityServer(channelNumber);
         }
+        MonitorManager.getInstance().start();
     }
 
     private static void shutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            NioClientFactory.destroy();
-            NioServerFactory.destroy();
+            MonitorManager.getInstance().stop();
+            SecuritySyncBoot.getInstance().release();
             WatchFileManager.getInstance().destroy();
             SecurityChannelBoot.getInstance().release();
             TaskExecutorPoolManager.getInstance().destroyAll();
-            SecurityChannelBoot.getInstance().release();
             OpContext.getInstance().destroy();
         }));
     }

@@ -4,16 +4,17 @@ import com.jav.common.log.LogDog;
 import com.jav.net.security.channel.SecurityServerChannelImage;
 import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.protocol.base.InitResult;
-import com.open.proxy.server.sync.bean.SecuritySyncEntity;
+import com.open.proxy.server.sync.SecurityServerSyncImage;
+import com.open.proxy.server.sync.bean.SecuritySyncPayloadData;
 import com.open.proxy.server.sync.joggle.IServerSyncStatusListener;
 
 public class ServerSyncStatusListener implements IServerSyncStatusListener {
 
     private String mMachineId;
-    private SecuritySyncEntity mLowLoadServer;
+    private SecuritySyncPayloadData mLowLoadServer;
     private SecurityServerChannelImage mServerChannelImage;
 
-    public ServerSyncStatusListener(String machineId, SecuritySyncEntity lowLoadServer, SecurityServerChannelImage image) {
+    public ServerSyncStatusListener(String machineId, SecuritySyncPayloadData lowLoadServer, SecurityServerChannelImage image) {
         mMachineId = machineId;
         mLowLoadServer = lowLoadServer;
         mServerChannelImage = image;
@@ -27,13 +28,14 @@ public class ServerSyncStatusListener implements IServerSyncStatusListener {
     @Override
     public void onSyncMinState(byte status) {
         if (status == ConstantCode.REP_SUCCESS_CODE) {
-            String data = mLowLoadServer.getProxyHost() + ":" + mLowLoadServer.getProxyPort();
-            mServerChannelImage.respondInitData(mMachineId, InitResult.SERVER_IP.getCode(), data.getBytes());
+            String data = mLowLoadServer.getHost() + ":" + mLowLoadServer.getPort();
+            mServerChannelImage.respondInitData(InitResult.SERVER_IP.getCode(), data.getBytes());
             LogDog.i("respond client low service address = " + data);
         } else {
-            mServerChannelImage.respondInitData(mMachineId, InitResult.ERROR.getCode(), null);
+            mServerChannelImage.respondInitData(InitResult.ERROR.getCode(), null);
             LogDog.w("sync server has error, respond sync error result!");
         }
+        SecurityServerSyncImage.getInstance().removerListener(this);
     }
 
 }

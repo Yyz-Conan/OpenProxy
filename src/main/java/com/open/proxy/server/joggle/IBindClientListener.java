@@ -1,6 +1,6 @@
 package com.open.proxy.server.joggle;
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 
 /**
  * 绑定客户端状态
@@ -30,7 +30,7 @@ public interface IBindClientListener {
      * @param requestId
      * @param buffer
      */
-    void onBindClientData(String requestId, MultiByteBuffer buffer);
+    void onBindClientData(String requestId, MultiBuffer buffer);
 
     /**
      * 客户端关闭则回调

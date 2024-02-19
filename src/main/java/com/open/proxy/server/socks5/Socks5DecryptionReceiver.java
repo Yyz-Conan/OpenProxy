@@ -1,11 +1,11 @@
 package com.open.proxy.server.socks5;
 
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
+import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.server.joggle.IDecryptionDataListener;
 import com.open.proxy.server.joggle.ISocks5ProcessListener;
 import com.open.proxy.server.joggle.Socks5ProcessStatus;
-import com.open.proxy.protocol.DataPacketTag;
 
 import java.security.InvalidParameterException;
 
@@ -60,7 +60,7 @@ public class Socks5DecryptionReceiver implements IDecryptionDataListener {
             status = Socks5ProcessStatus.FORWARD;
         } else if (status == Socks5ProcessStatus.FORWARD) {
             //中转状态直接回调数据
-            MultiByteBuffer buffer = new MultiByteBuffer(decrypt);
+            MultiBuffer buffer = new MultiBuffer(decrypt);
             if (serverMode) {
                 mListener.onUpstreamData(buffer);
             } else {

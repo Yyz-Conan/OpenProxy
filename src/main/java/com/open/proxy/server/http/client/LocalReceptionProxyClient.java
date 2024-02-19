@@ -6,11 +6,11 @@ import com.jav.common.state.joggle.IStateMachine;
 import com.jav.common.track.SpiderEnvoy;
 import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.common.util.StringEnvoy;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.NetTaskStatus;
+import com.jav.net.base.RequestMode;
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.*;
-import com.jav.net.entity.MultiByteBuffer;
-import com.jav.net.entity.RequestMode;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
@@ -34,6 +34,7 @@ import com.open.proxy.server.http.server.MultipleProxyServer;
 import com.open.proxy.server.joggle.IBindClientListener;
 import com.open.proxy.utils.RequestHelper;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ import java.util.Map;
  * @author yyz
  */
 public class LocalReceptionProxyClient extends NioClientTask implements IClientChannelStatusListener,
-        INetReceiver<MultiByteBuffer>, ISenderFeedback, IBindClientListener {
+        INetReceiver<MultiBuffer>, ISenderFeedback<MultiBuffer>, IBindClientListener {
 
     private SecurityClientChannelImage mClientChannelImage;
     private XHttpDecoderProcessor mProcessor;
@@ -56,13 +57,19 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
     private boolean mIsBlacklist = false;
     private byte[] mConnectData;
 
+    private String httpUrl;
+
 
     public LocalReceptionProxyClient(SocketChannel channel) {
-        super(channel, null);
+        super(channel);
     }
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        // 创建http协议解析器
+        mProcessor = new XHttpDecoderProcessor();
+        mProcessor.setMode(XReceiverMode.REQUEST);
+
         ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
         boolean isDebug = cFileEnvoy.getBooleanValue(IConfigKey.KEY_DEBUG_MODE);
         SpiderEnvoy.getInstance().setEnablePrint(isDebug);
@@ -71,7 +78,7 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
         // 设置发送者和接收者
         NioSender sender = new NioSender();
-        sender.setChannel(getSelectionKey(), channel);
+        sender.setChannel(selectionKey, channel);
         sender.setSenderFeedback(this);
         setSender(sender);
         NioReceiver receiver = new NioReceiver();
@@ -82,10 +89,6 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
         if (SecurityChannelBoot.getInstance().isInit()) {
             SecurityChannelBoot.getInstance().registerClientChannel(this);
         }
-
-        // 创建http协议解析器
-        mProcessor = new XHttpDecoderProcessor();
-        mProcessor.setMode(XReceiverMode.REQUEST);
     }
 
     @Override
@@ -97,17 +100,19 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
     @Override
     protected void onCloseChannel() {
+        int count = MultipleProxyServer.sLocalConnectCount.decrementAndGet();
         if (mCurRequestHost == null) {
-            LogDog.d("browser heartbeat !!!" + " [ connect count = " + MultipleProxyServer.sLocalConnectCount.decrementAndGet() + " ]  object = " + this);
+            LogDog.w("browser heartbeat !!!" + " [ connect count = " + count + " ]  object = " + this);
         } else {
-            LogDog.d("close " + mCurRequestHost + " [ connect count = " + MultipleProxyServer.sLocalConnectCount.decrementAndGet() + " ]  object = " + this);
+            LogDog.w("close " + mCurRequestHost + " [ connect count = " + count + " ]  object = " + this);
         }
 
         if (mLocalTransProxyClient != null) {
             IStateMachine<Integer> stateMachine = mLocalTransProxyClient.getStatusMachine();
             if (!stateMachine.isAttachState(NetTaskStatus.FINISHING) && stateMachine.getState() != NetTaskStatus.INVALID) {
-                INetFactory factory = OpContext.getInstance().getBClientFactory();
-                factory.getNetTaskComponent().addUnExecTask(mLocalTransProxyClient);
+                INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+                INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+                component.addUnExecTask(mLocalTransProxyClient);
             }
         }
         SecurityChannelBoot.getInstance().unRegisterClientChannel(mClientChannelImage);
@@ -125,31 +130,34 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
                 responseTunnelEstablished();
                 SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "remote 返回CONNECT 响应");
             } else {
-                mClientChannelImage.sendTransDataFromClinet(mConnectData);
-                mConnectData = null;
+                mClientChannelImage.sendTransDataFromClient(mConnectData);
+//                mConnectData = null;
             }
         } else {
-            INetFactory factory = OpContext.getInstance().getBClientFactory();
-            factory.getNetTaskComponent().addUnExecTask(this);
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+            INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+            component.addUnExecTask(this);
         }
     }
 
     @Override
-    public void onChannelReady(SecurityClientChannelImage image) {
+    public void onChannelImageReady(SecurityClientChannelImage image) {
         mClientChannelImage = image;
+        notifyChannelReady();
     }
 
     @Override
     public void onRemoteTransData(byte[] data) {
         // 接收代理服务端返回的数据
-        getSender().sendData(new MultiByteBuffer(data));
+        getSender().sendData(new MultiBuffer(data));
     }
 
     @Override
     public void onChannelInvalid() {
         LogDog.w("--> LocalReceptionProxyClient onInvalid");
-        INetFactory factory = OpContext.getInstance().getBClientFactory();
-        factory.getNetTaskComponent().addUnExecTask(this);
+        INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+        INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+        component.addUnExecTask(this);
     }
 
     @Override
@@ -158,9 +166,9 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
     }
 
     @Override
-    public void onReceiveFullData(MultiByteBuffer buffer) {
+    public void onReceiveFullData(MultiBuffer buffer) {
         // 接收到需要往代理服务中转的客户端数据
-        byte[] data = buffer.array();
+        byte[] data = buffer.asByte();
         if (data != null) {
             if (mIsRequestTag || RequestHelper.isRequest(data)) {
                 decoderHttpData(data);
@@ -168,7 +176,7 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
                 // 当前状态非http的request请求体
                 if (mIsNeedProxy) {
                     // 当前需要走代理
-                    mClientChannelImage.sendTransDataFromClinet(data);
+                    mClientChannelImage.sendTransDataFromClient(data);
                     SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "<remote> 一般是https 正式请求数据");
                 } else {
                     boolean isFinish = false;
@@ -177,12 +185,13 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
                         isFinish = stateMachine.isAttachState(NetTaskStatus.FINISHING);
                     }
                     if (isFinish || mLocalTransProxyClient == null) {
-                        INetFactory factory = OpContext.getInstance().getBClientFactory();
-                        factory.getNetTaskComponent().addUnExecTask(this);
+                        INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+                        INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+                        component.addUnExecTask(this);
                     } else {
                         SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "<local> 一般是https 正式请求数据");
                         // LogDog.d("==> <local> 一般是https 正式请求数据 host = " + mCurRequestHost);
-                        mLocalTransProxyClient.getSender().sendData(new MultiByteBuffer(data));
+                        mLocalTransProxyClient.getSender().sendData(new MultiBuffer(data));
                     }
                 }
             }
@@ -208,6 +217,7 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
     private void handleRequest(XResponse response) {
         String newRequestHost = XResponseHelper.getHost(response);
+        httpUrl = XResponseHelper.getHttpUrl(response);
         // 过滤非法数据
         if (StringEnvoy.isEmpty(newRequestHost) && StringEnvoy.isEmpty(mCurRequestHost)) {
             // 异常数据,暂时认为是客户端的心跳包
@@ -218,8 +228,9 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
             }
             String msg = "newRequestHost and requestHost is null ,data = " + dataStr;
             SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), msg);
-            INetFactory factory = OpContext.getInstance().getBClientFactory();
-            factory.getNetTaskComponent().addUnExecTask(LocalReceptionProxyClient.this);
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+            INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+            component.addUnExecTask(LocalReceptionProxyClient.this);
             LogDog.e("--> [ browser heartbeat ] = " + dataStr);
             return;
         }
@@ -230,7 +241,7 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
             LogDog.e("++> intercept blacklist host = " + newRequestHost);
             mCurRequestHost = newRequestHost;
 
-            getSender().sendData(new MultiByteBuffer(HtmlGenerator.headDenyService(newRequestHost)));
+            getSender().sendData(new MultiBuffer(HtmlGenerator.headDenyService(newRequestHost)));
 
             String msg = "newRequestHost in black menu ,host = " + newRequestHost;
             SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), msg);
@@ -240,13 +251,13 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
         // 向远程服务请求创建目标链接
         int port = XResponseHelper.getPort(response);
         createTargetConnect(response, newRequestHost, port);
-        String msg = "new request host = " + newRequestHost + " is inconsistent with the current request host = " + mCurRequestHost;
+        String msg = "new request host = " + httpUrl + " is inconsistent with the current request host = " + mCurRequestHost;
         SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), msg);
     }
 
     private void createTargetConnect(XResponse response, String host, int port) {
 
-        INetFactory factory = OpContext.getInstance().getBClientFactory();
+        INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
         if (mLocalTransProxyClient != null) {
             // 结束上一个链接
             IStateMachine<Integer> stateMachine = mLocalTransProxyClient.getStatusMachine();
@@ -273,11 +284,14 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
                     mCurRequestHost = null;
                 }
                 if (mClientChannelImage == null) {
-                    factory.getNetTaskComponent().addUnExecTask(this);
-                    return;
+                    waitChannelReady();
+                    if (mClientChannelImage == null) {
+                        factory.getNetTaskComponent().addUnExecTask(this);
+                        return;
+                    }
                 }
                 LogDog.d("--> send proxy target host  = " + host + ":" + port);
-                mClientChannelImage.sendRequestDataFromClinet(host, port);
+                mClientChannelImage.sendRequestDataFromClient(host, port);
                 SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "<remote> 请求创建目标链接");
                 return;
             }
@@ -289,25 +303,43 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
         mLocalTransProxyClient = new TransProxyClient(host, port);
         mLocalTransProxyClient.setBindClientListener(this);
-        factory.getNetTaskComponent().addExecTask(mLocalTransProxyClient);
+        INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+        component.addExecTask(mLocalTransProxyClient);
         SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "<local> 请求创建目标链接");
 
         mCurRequestHost = host;
-        LogDog.d("--> new request host = " + host + ":" + port);
+        LogDog.d("++--> new request host = " + host + ":" + port);
+    }
+
+
+    private void waitChannelReady() {
+        synchronized (mProcessor) {
+            try {
+                mProcessor.wait(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void notifyChannelReady() {
+        synchronized (mProcessor) {
+            mProcessor.notify();
+        }
     }
 
     private void responseTunnelEstablished() {
         // 远程通道创建成功，响应客户端成功
-        getSender().sendData(new MultiByteBuffer(HtmlGenerator.httpsTunnelEstablished()));
+        getSender().sendData(new MultiBuffer(HtmlGenerator.httpsTunnelEstablished()));
     }
 
     @Override
-    public void onSenderFeedBack(INetSender iNetSender, Object obj, Throwable throwable) {
+    public void onSenderFeedBack(INetSender<MultiBuffer> sender, MultiBuffer buffer, Throwable throwable) {
         if (throwable != null || mIsBlacklist) {
             if (throwable != null) {
                 throwable.printStackTrace();
             }
-            INetFactory factory = OpContext.getInstance().getBClientFactory();
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
             factory.getNetTaskComponent().addUnExecTask(this);
         }
     }
@@ -317,8 +349,8 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
         if (RequestMode.CONNECT.getMode().equals(mRequestMethod)) {
             responseTunnelEstablished();
         } else {
-            mLocalTransProxyClient.getSender().sendData(new MultiByteBuffer(mConnectData));
-            mConnectData = null;
+            mLocalTransProxyClient.getSender().sendData(new MultiBuffer(mConnectData));
+//            mConnectData = null;
         }
         SpiderEnvoy.getInstance().pinKeyProbe(LocalReceptionProxyClient.this.toString(), "<local> CONNECT 响应");
         //        LogDog.i("--> <local> CONNECT 响应 = " + mCurRequestHost);
@@ -326,7 +358,21 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
 
     @Override
-    public void onBindClientData(String requestId, MultiByteBuffer buffer) {
+    public void onBindClientData(String requestId, MultiBuffer buffer) {
+//        byte[] byteData = buffer.asByte();
+//        StringBuilder dataStr = new StringBuilder();
+//        int dataLength = byteData.length;
+//        if (byteData.length > 80) {
+//            dataLength = 80;
+//        }
+//        for (int index = 0; index < dataLength; index++) {
+//            String hex = Integer.toHexString(byteData[index] & 0xff);
+//            if (hex.length() == 1) {
+//                hex = "0" + hex;
+//            }
+//            dataStr.append(hex);
+//        }
+//        LogDog.d("==> httpUrl = " + httpUrl + " 服务器返回数据 = " + dataStr);
         getSender().sendData(buffer);
     }
 
@@ -337,5 +383,7 @@ public class LocalReceptionProxyClient extends NioClientTask implements IClientC
 
     @Override
     public void onBindClientClose(String requestId) {
+//        INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+//        factory.getNetTaskComponent().addUnExecTask(this);
     }
 }

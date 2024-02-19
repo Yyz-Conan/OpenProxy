@@ -2,7 +2,6 @@ package com.open.proxy.server;
 
 
 import com.jav.net.nio.NioClientTask;
-import com.jav.net.ssl.TLSHandler;
 import com.open.proxy.server.joggle.IBindClientListener;
 
 import java.nio.channels.SocketChannel;
@@ -19,8 +18,8 @@ public class BindClientTask extends NioClientTask {
     public BindClientTask() {
     }
 
-    public BindClientTask(SocketChannel channel, TLSHandler tlsHandler) {
-        super(channel, tlsHandler);
+    public BindClientTask(SocketChannel channel) {
+        super(channel);
     }
 
     public void setBindClientListener(IBindClientListener listener) {

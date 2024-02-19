@@ -4,4 +4,6 @@ out/
 .gradle/
 classes/
 src/test/
+build/
+monitor.page
 LogDog/

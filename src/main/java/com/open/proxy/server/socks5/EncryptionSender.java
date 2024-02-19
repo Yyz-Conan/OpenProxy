@@ -4,7 +4,7 @@ package com.open.proxy.server.socks5;
 import com.jav.common.cryption.DataSafeManager;
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.util.TypeConversion;
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.nio.NioSender;
 
 import java.nio.ByteBuffer;
@@ -30,10 +30,10 @@ public class EncryptionSender extends NioSender {
     }
 
     @Override
-    public void sendData(MultiByteBuffer buffer) {
+    public void sendData(MultiBuffer buffer) {
         if (mIsNeedEncryption) {
 //            buffer.flip();
-            byte[] byteData = buffer.array();
+            byte[] byteData = buffer.asByte();
             if (byteData != null) {
                 sendEncryptData(byteData);
             }
@@ -46,14 +46,14 @@ public class EncryptionSender extends NioSender {
         byte[] encrypt = mDataSafeManager.encode(byteData);
         //send com.open.proxy.protocol head
         ByteBuffer tagData = ByteBuffer.wrap(mTag);
-        super.sendData(new MultiByteBuffer(tagData));
+        super.sendData(new MultiBuffer(tagData));
         //send data length
         byte[] length = TypeConversion.intToByte(encrypt.length);
         ByteBuffer lengthData = ByteBuffer.wrap(length);
-        super.sendData(new MultiByteBuffer(lengthData));
+        super.sendData(new MultiBuffer(lengthData));
         //send data
         ByteBuffer encryptData = ByteBuffer.wrap(encrypt);
-        super.sendData(new MultiByteBuffer(encryptData));
+        super.sendData(new MultiBuffer(encryptData));
     }
 
 }

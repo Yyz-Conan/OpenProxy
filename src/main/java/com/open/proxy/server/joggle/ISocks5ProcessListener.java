@@ -1,7 +1,7 @@
 package com.open.proxy.server.joggle;
 
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 import com.open.proxy.protocol.Socks5Generator;
 
 import java.util.List;
@@ -50,12 +50,12 @@ public interface ISocks5ProcessListener {
      *
      * @param buffer
      */
-    void onDownStreamData(MultiByteBuffer buffer);
+    void onDownStreamData(MultiBuffer buffer);
 
     /**
      * 把代理客户端请求的数据中转发送给目标服务（远程代理服务或者真实目标服务）
      *
      * @param buffer
      */
-    void onUpstreamData(MultiByteBuffer buffer);
+    void onUpstreamData(MultiBuffer buffer);
 }

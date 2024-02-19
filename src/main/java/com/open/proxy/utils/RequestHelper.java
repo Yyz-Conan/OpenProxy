@@ -1,7 +1,7 @@
 package com.open.proxy.utils;
 
 
-import com.jav.net.entity.RequestMode;
+import com.jav.net.base.RequestMode;
 
 public class RequestHelper {
 

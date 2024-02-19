@@ -1,7 +1,7 @@
 package com.open.proxy.server.sync.protocol;
 
 
-import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.security.protocol.AbsProxyProtocol;
 import com.open.proxy.server.sync.bean.SyncActivityCode;
@@ -20,7 +20,7 @@ public class SyncProtocol extends AbsProxyProtocol {
     /**
      * 不包含length的4个字节的长度
      */
-    private static final int HEAD_LENGTH = 42;
+    private static final int HEAD_LENGTH = 47;
 
     /**
      * 机器码（32Byte）
@@ -61,32 +61,31 @@ public class SyncProtocol extends AbsProxyProtocol {
     }
 
     @Override
-    public ByteBuffer toData(IEncryptComponent encryptComponent) {
+    public ByteBuffer toData(ICipherComponent encryptComponent) {
         int length = HEAD_LENGTH;
 
         Byte oCode = operateCode();
+        byte[] sendData = sendData();
 
-        if (oCode == SyncOperateCode.SYNC_AVG.getCode() || oCode == SyncOperateCode.RESPOND_SYNC_AVG.getCode()) {
-            length += 5;
-        } else {
-            length += sendData().length;
+        if (oCode == SyncOperateCode.SYNC_MID.getCode() || oCode == SyncOperateCode.RESPOND_SYNC_MID.getCode()) {
+            length += sendData.length;
         }
 
         ByteBuffer buffer = ByteBuffer.allocate(length);
         buffer.putLong(time());
         buffer.put(activityCode());
         buffer.put(mMachineId);
-
-
         buffer.put(operateCode());
 
-        if (oCode == SyncOperateCode.SYNC_AVG.getCode() || oCode == SyncOperateCode.RESPOND_SYNC_AVG.getCode()) {
+        if (length == HEAD_LENGTH) {
             buffer.putInt(mPort);
             buffer.put(mLoadAvg);
         } else {
-            buffer.put(sendData());
+            buffer.put(sendData);
         }
 
-        return onEncrypt(encryptComponent, buffer);
+        byte[] rawData = buffer.array();
+        byte[] encodeData = encryptComponent.onEncrypt(rawData);
+        return ByteBuffer.wrap(encodeData);
     }
 }

@@ -22,6 +22,7 @@ public interface IConfigKey {
     String CONFIG_IS_SERVER_MODE = "isServerMode";
     String CONFIG_ENCRYPTION_MODE = "encryptionMode";
     String CONFIG_ENABLE_SOCKS5_PROXY = "enableSocks5Proxy";
+    String CONFIG_ENABLE_UPDATE_SERVER = "enableUpdateServer";
 
     //----------------------------文件配置------------------------------------------------
 

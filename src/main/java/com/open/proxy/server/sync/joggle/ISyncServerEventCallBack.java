@@ -1,5 +1,7 @@
 package com.open.proxy.server.sync.joggle;
 
+import java.net.InetSocketAddress;
+
 /**
  * sync 服务事件回调
  *
@@ -15,7 +17,7 @@ public interface ISyncServerEventCallBack {
      * @param machineId   机器id
      * @param loadCount   负载值
      */
-    void onRespondSyncCallBack(byte operateCode, int proxyPort, String machineId, byte loadCount);
+    void onRespondSyncCallBack(InetSocketAddress remoteAddress, byte operateCode, int proxyPort, String machineId, byte loadCount);
 
 
     /**

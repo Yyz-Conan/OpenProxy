@@ -1,20 +1,17 @@
 package com.open.proxy.server.sync;
 
-import com.jav.net.nio.NioClientFactory;
-import com.jav.net.nio.NioServerFactory;
-import com.open.proxy.server.sync.bean.SecuritySyncEntity;
+import com.jav.net.nio.NioUdpFactory;
+import com.open.proxy.server.sync.bean.SecuritySyncPayloadData;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class SecuritySyncBoot {
 
     private SecuritySyncContext mContext;
 
-    private NioServerFactory mServerFactory;
-    private NioClientFactory mClientFactory;
+    private final NioUdpFactory mUdpFactory;
 
     /**
      * 是否已经初始化
@@ -24,17 +21,16 @@ public class SecuritySyncBoot {
     /**
      * 存储分布式服务的负载信息
      */
-    private Map<String, SecuritySyncEntity> mSyncInfo;
+    private Map<String, SecuritySyncPayloadData> mSyncInfo;
 
 
     /**
      * 当前服务的负载信息
      */
-    private SecuritySyncEntity mLocalSyncInfo;
+    private SecuritySyncPayloadData mLocalSyncInfo;
 
     private SecuritySyncBoot() {
-        mServerFactory = new NioServerFactory();
-        mClientFactory = new NioClientFactory();
+        mUdpFactory = new NioUdpFactory();
     }
 
     private static final class InnerClass {
@@ -52,11 +48,11 @@ public class SecuritySyncBoot {
         }
         mContext = context;
 
-        mLocalSyncInfo = new SecuritySyncEntity(context.getMachineId(), context.getSyncHost());
-        mLocalSyncInfo.setProxyPort(context.getProxyPort());
+        mSyncInfo = new HashMap();
+        mLocalSyncInfo = new SecuritySyncPayloadData(context.getMachineId(), context.getSyncHost());
+        mLocalSyncInfo.setPort(context.getProxyPort());
 
-        mServerFactory.open();
-        mClientFactory.open();
+        mUdpFactory.open();
         mIsInit = true;
     }
 
@@ -80,10 +76,10 @@ public class SecuritySyncBoot {
         if (mSyncInfo == null) {
             return;
         }
-        SecuritySyncEntity entity = mSyncInfo.get(mid);
+        SecuritySyncPayloadData entity = mSyncInfo.get(mid);
         if (entity != null) {
             entity.updateAvgLoad(avgLoad);
-            entity.setProxyPort(proxyPort);
+            entity.setPort(proxyPort);
         }
     }
 
@@ -92,13 +88,13 @@ public class SecuritySyncBoot {
      *
      * @return 返回低负载的服务地址
      */
-    public SecuritySyncEntity getLowLoadServer() {
+    public SecuritySyncPayloadData getLowLoadServer() {
         if (mSyncInfo == null) {
             return null;
         }
-        Collection<SecuritySyncEntity> collection = mSyncInfo.values();
-        SecuritySyncEntity bestTarget = mLocalSyncInfo;
-        for (SecuritySyncEntity entity : collection) {
+        Collection<SecuritySyncPayloadData> collection = mSyncInfo.values();
+        SecuritySyncPayloadData bestTarget = mLocalSyncInfo;
+        for (SecuritySyncPayloadData entity : collection) {
             if (bestTarget.getAvgLoad() > entity.getAvgLoad()) {
                 bestTarget = entity;
             }
@@ -111,17 +107,20 @@ public class SecuritySyncBoot {
     }
 
 
-    protected SecuritySyncEntity getLocalSyncInfo() {
+    protected SecuritySyncPayloadData getNativeSyncInfo() {
         return mLocalSyncInfo;
     }
 
+    protected Map<String, SecuritySyncPayloadData> getRemoteSyncInfo() {
+        return mSyncInfo;
+    }
 
     /**
      * 更新本机的负载值
      *
      * @param loadCount
      */
-    public void updateLocalServerSyncInfo(long loadCount) {
+    public void updateNativeServerSyncInfo(long loadCount) {
         if (mLocalSyncInfo != null) {
             mLocalSyncInfo.updateConnectCount(loadCount);
         }
@@ -132,7 +131,7 @@ public class SecuritySyncBoot {
      *
      * @return
      */
-    public long getLocalServerLoadCount() {
+    public long getNativeServerLoadCount() {
         if (mLocalSyncInfo != null) {
             return mLocalSyncInfo.getLoadCount();
         }
@@ -140,40 +139,14 @@ public class SecuritySyncBoot {
     }
 
 
-    /**
-     * 加载需要同步的服务列表
-     */
-    public void connectSyncServer() {
-        Map<String, String> syncServer = mContext.getSyncServer();
-        if (syncServer == null || syncServer.isEmpty()) {
-            return;
-        }
-        mSyncInfo = new HashMap(syncServer.size());
-        Set<Map.Entry<String, String>> entrySet = syncServer.entrySet();
-        for (Map.Entry<String, String> entry : entrySet) {
-            String value = entry.getValue();
-            String[] arrays = value.split(":");
-            if (arrays.length != 2) {
-                continue;
-            }
-            String key = entry.getKey();
-            int port = Integer.parseInt(arrays[1]);
-            SecuritySyncEntity entity = new SecuritySyncEntity(key, mContext.getSyncHost());
-            mSyncInfo.put(key, entity);
-            SecuritySyncServerReception reception = new SecuritySyncServerReception(mContext);
-            reception.setAddress(arrays[0], port);
-
-            mClientFactory.getNetTaskComponent().addExecTask(reception);
-        }
-    }
 
     /**
      * 启动同步服务
      */
     public void bootSyncServer() {
-        SecuritySyncService syncService = new SecuritySyncService(mContext, mClientFactory);
-        syncService.setAddress(mContext.getSyncHost(), mContext.getSyncPort());
-        mServerFactory.getNetTaskComponent().addExecTask(syncService);
+        SecuritySyncService syncService = new SecuritySyncService(mContext);
+        syncService.bindAddress(mContext.getSyncHost(), mContext.getSyncPort());
+        mUdpFactory.getNetTaskComponent().addExecTask(syncService);
     }
 
     /**
@@ -181,11 +154,8 @@ public class SecuritySyncBoot {
      */
     public void release() {
         if (mIsInit) {
-            if (mClientFactory != null) {
-                mClientFactory.close();
-            }
-            if (mServerFactory != null) {
-                mServerFactory.close();
+            if (mUdpFactory != null) {
+                mUdpFactory.close();
             }
             mSyncInfo.clear();
             mIsInit = false;

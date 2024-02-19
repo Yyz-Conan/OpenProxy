@@ -94,14 +94,31 @@ public class ProxyFilterManager {
         if (StringEnvoy.isEmpty(host)) {
             return false;
         }
+        String[] hostArray = host.split("\\.");
         synchronized (this) {
             for (String tmp : proxyList) {
-                if (host.contains(tmp)) {
+                String[] tmpArray = tmp.split("\\.");
+                boolean isMatch = compareDomainName(tmpArray, hostArray);
+                if (isMatch) {
                     return true;
                 }
             }
             return false;
         }
+    }
+
+    private boolean compareDomainName(String[] source, String[] target) {
+        if (source.length > target.length) {
+            return false;
+        }
+        int match = 0;
+        int diff = target.length - source.length;
+        for (int index = source.length - 1; index >= 0; index--) {
+            if (source[index].equals(target[index + diff])) {
+                match++;
+            }
+        }
+        return match == source.length;
     }
 
 }

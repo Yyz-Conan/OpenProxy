@@ -5,22 +5,24 @@ import com.jav.common.log.LogDog;
 import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.common.util.StringEnvoy;
 import com.jav.common.util.TypeConversion;
+import com.jav.net.base.MultiBuffer;
+import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.INetSender;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISenderFeedback;
-import com.jav.net.entity.MultiByteBuffer;
-import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioSender;
 import com.open.proxy.IConfigKey;
 import com.open.proxy.OpContext;
+import com.open.proxy.protocol.DataPacketTag;
 import com.open.proxy.server.joggle.IUpdateAffairsCallBack;
 import com.open.proxy.server.joggle.IUpdateConfirmCallBack;
-import com.open.proxy.protocol.DataPacketTag;
 
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
@@ -39,7 +41,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     }
 
     public UpdateHandleClient(SocketChannel channel) {
-        super(channel, null);
+        super(channel);
         init(true);
     }
 
@@ -58,15 +60,15 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
 
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
         LogDog.d("==================== com.open.proxy.connect success ============================");
-        getSender().setChannel(getSelectionKey(), channel);
+        getSender().setChannel(selectionKey, channel);
         if (currentVersion > 0) {
             //send update com.open.proxy.protocol head
-            getSender().sendData(new MultiByteBuffer(DataPacketTag.PACK_UPDATE_TAG));
+            getSender().sendData(new MultiBuffer(DataPacketTag.PACK_UPDATE_TAG));
             //send data
             byte[] versionByte = TypeConversion.intToByte(currentVersion);
-            getSender().sendData(new MultiByteBuffer(versionByte));
+            getSender().sendData(new MultiBuffer(versionByte));
         }
     }
 
@@ -75,7 +77,9 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
     public void onSenderFeedBack(INetSender iNetSender, Object o, Throwable throwable) {
         if (getSender().getCacheComponent().size() == 0) {
             //数据发送完毕断开连接
-            NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+            INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+            component.addUnExecTask(this);
         }
     }
 
@@ -88,10 +92,10 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
         boolean isHasNewVersion = version < newVersion;
         //响应是否有新版本
         //send update com.open.proxy.protocol head
-        getSender().sendData(new MultiByteBuffer(DataPacketTag.PACK_UPDATE_TAG));
+        getSender().sendData(new MultiBuffer(DataPacketTag.PACK_UPDATE_TAG));
         //send data
         byte[] countFileByte = TypeConversion.intToByte(isHasNewVersion ? 1 : 0);
-        getSender().sendData(new MultiByteBuffer(countFileByte));
+        getSender().sendData(new MultiBuffer(countFileByte));
 
         if (isHasNewVersion && StringEnvoy.isNotEmpty(updateFilePath)) {
             File updateFile = new File(updateFilePath);
@@ -101,7 +105,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                     byte[] fileSizeByte = TypeConversion.long2Bytes(fileSize);
                     //响应更新文件大小
                     LogDog.d("==> send update file size to client !");
-                    getSender().sendData(new MultiByteBuffer(fileSizeByte));
+                    getSender().sendData(new MultiBuffer(fileSizeByte));
                     //响应更新文件数据
                     LogDog.d("==> send update file to client !");
                     sendFileData(updateFile);
@@ -131,7 +135,7 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 long fileSize = fileChannel.size();
                 do {
                     MappedByteBuffer byteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, position, size);
-                    getSender().sendData(new MultiByteBuffer(byteBuffer));
+                    getSender().sendData(new MultiBuffer(byteBuffer));
                     position += size;
                     if (fileSize - position < size) {
                         size = fileSize - position;
@@ -217,7 +221,9 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
                 }
             }
             //数据发送完毕断开连接
-            NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+            INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+            component.addUnExecTask(this);
         }
     }
 
@@ -235,6 +241,8 @@ public class UpdateHandleClient extends NioClientTask implements IUpdateAffairsC
 
     @Override
     public void onCancel() {
-        NioClientFactory.getFactory().getNetTaskComponent().addUnExecTask(this);
+        INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+        INetTaskComponent<NioClientTask> component = factory.getNetTaskComponent();
+        component.addUnExecTask(this);
     }
 }

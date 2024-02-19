@@ -11,7 +11,7 @@ public class InterceptFileChangeWatch extends BaseFileChangeWatch {
 
     @Override
     public void onTargetChange(String targetFileName) {
-        if (targetFileName.equals(mFileName)) {
+        if (targetFileName.startsWith(mFileName)) {
             //清除所有的过滤器
             InterceptFilterManager.getInstance().clear();
             //创建新的过滤器

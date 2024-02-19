@@ -1,12 +1,12 @@
 package com.open.proxy.server.socks5;
 
 
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.joggle.INetReceiver;
-import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioReceiver;
+import com.open.proxy.protocol.Socks5Generator;
 import com.open.proxy.server.joggle.ISocks5ProcessListener;
 import com.open.proxy.server.joggle.Socks5ProcessStatus;
-import com.open.proxy.protocol.Socks5Generator;
 
 import java.io.IOException;
 import java.net.SocketException;
@@ -35,7 +35,7 @@ public class Socks5Receiver {
         return receiver;
     }
 
-    private class CoreReceiver extends NioReceiver implements INetReceiver<MultiByteBuffer> {
+    private class CoreReceiver extends NioReceiver implements INetReceiver<MultiBuffer> {
 
         @Override
         protected void onReadNetData(SocketChannel channel) throws Throwable {
@@ -209,7 +209,7 @@ public class Socks5Receiver {
          * @param buffer
          */
         @Override
-        public void onReceiveFullData(MultiByteBuffer buffer) {
+        public void onReceiveFullData(MultiBuffer buffer) {
             listener.onUpstreamData(buffer);
         }
 

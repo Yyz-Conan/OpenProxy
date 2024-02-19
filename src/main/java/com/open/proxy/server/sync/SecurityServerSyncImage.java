@@ -46,6 +46,10 @@ public class SecurityServerSyncImage {
         mListener.remove(listener.getMachineId());
     }
 
+    public void clearListener() {
+        mListener.clear();
+    }
+
 
     protected IServerSyncStatusListener getListener(String mid) {
         if (mid == null) {

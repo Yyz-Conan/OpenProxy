@@ -4,7 +4,7 @@ import com.jav.common.util.ConfigFileEnvoy;
 import com.jav.common.util.DatFileEnvoy;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.base.joggle.INetFactory;
-import com.jav.net.nio.NioBalancedClientFactory;
+import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.open.proxy.utils.PasswordUtils;
 
@@ -17,7 +17,7 @@ import java.io.File;
  */
 public class OpContext {
 
-    public static final String MONITOR_FILE = "monitor.page";
+    public static final String MONITOR_FILE = "channelTraffic.console";
     private static final String KEY_USER_DIR = "user.dir";
     private static final String KEY_COMMAND = "sun.java.command";
 
@@ -29,7 +29,7 @@ public class OpContext {
     private static final String TEST_SERVER_IDE_URL = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "server" + File.separator;
     private static final String TEST_CLIENT_IDE_URL = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "client" + File.separator;
 
-    private static final int WORK_COUNT = 2;
+    private static final int WORK_COUNT = 4;
 
     private static class InnerClass {
         private final static OpContext sContext = new OpContext();
@@ -46,12 +46,12 @@ public class OpContext {
     private String mCurrentWorkDir = null;
     private String mCurrentCommand = null;
 
-    private String mDesPassword;
+    private String mAESPassword;
 
     private OpContext() {
         mCFileEnvoy = new ConfigFileEnvoy();
         mMachineFileEnvoy = new DatFileEnvoy();
-        mBClientFactory = new NioBalancedClientFactory(WORK_COUNT);
+        mBClientFactory = new NioClientFactory(WORK_COUNT);
     }
 
     public INetFactory<NioClientTask> getBClientFactory() {
@@ -104,11 +104,11 @@ public class OpContext {
     }
 
 
-    public String getDesPassword() {
-        if (StringEnvoy.isEmpty(mDesPassword)) {
-            mDesPassword = PasswordUtils.randomPassword(32);
+    public byte[] getAESPassword() {
+        if (StringEnvoy.isEmpty(mAESPassword)) {
+            mAESPassword = PasswordUtils.randomPassword(32);
         }
-        return mDesPassword;
+        return mAESPassword.getBytes();
     }
 
     public void destroy() {

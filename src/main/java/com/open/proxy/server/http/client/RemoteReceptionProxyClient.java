@@ -2,16 +2,19 @@ package com.open.proxy.server.http.client;
 
 
 import com.jav.common.log.LogDog;
+import com.jav.common.state.joggle.IStateMachine;
 import com.jav.common.track.SpiderEnvoy;
+import com.jav.net.base.MultiBuffer;
+import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.SecurityChannelContext;
 import com.jav.net.security.channel.SecurityServerChannelImage;
 import com.jav.net.security.channel.base.AbsSecurityServerReception;
 import com.jav.net.security.channel.base.ConstantCode;
+import com.jav.net.security.channel.base.InitRespondResult;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.protocol.base.TransOperateCode;
 import com.open.proxy.OpContext;
@@ -19,7 +22,7 @@ import com.open.proxy.server.http.server.MultipleProxyServer;
 import com.open.proxy.server.joggle.IBindClientListener;
 import com.open.proxy.server.sync.SecurityServerSyncImage;
 import com.open.proxy.server.sync.SecuritySyncBoot;
-import com.open.proxy.server.sync.bean.SecuritySyncEntity;
+import com.open.proxy.server.sync.bean.SecuritySyncPayloadData;
 
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
@@ -49,9 +52,10 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
     @Override
     protected void onCloseChannel() {
         super.onCloseChannel();
+        SecurityServerSyncImage.getInstance().clearListener();
         LogDog.d(" close [ connect count = " + MultipleProxyServer.sLocalConnectCount.decrementAndGet() + " ] ");
         //更新当前链接数
-        SecuritySyncBoot.getInstance().updateLocalServerSyncInfo(MultipleProxyServer.sLocalConnectCount.get());
+        SecuritySyncBoot.getInstance().updateNativeServerSyncInfo(MultipleProxyServer.sLocalConnectCount.get());
 
         synchronized (mProxyClientMap) {
             for (TransProxyClient client : mProxyClientMap.values()) {
@@ -63,9 +67,9 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
     }
 
     @Override
-    public void onChannelReady(SecurityServerChannelImage image) {
-        LogDog.d("--> RemoteReceptionProxyClient onReady");
-        SecuritySyncBoot.getInstance().updateLocalServerSyncInfo(MultipleProxyServer.sLocalConnectCount.get());
+    public void onChannelImageReady(SecurityServerChannelImage image) {
+        LogDog.d("--> RemoteReceptionProxyClient onReady " + this);
+        SecuritySyncBoot.getInstance().updateNativeServerSyncInfo(MultipleProxyServer.sLocalConnectCount.get());
     }
 
     @Override
@@ -79,14 +83,14 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
             // 已存在
             NioSender sender = client.getSender();
             if (sender != null) {
-                sender.sendData(new MultiByteBuffer(data));
+                sender.sendData(new MultiBuffer(data));
             }
         }
     }
 
     @Override
     public void onChannelInvalid() {
-        LogDog.w("--> RemoteReceptionProxyClient onInvalid");
+        LogDog.w("--> RemoteReceptionProxyClient onInvalid " + this);
     }
 
     @Override
@@ -116,9 +120,9 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
     }
 
     @Override
-    public boolean onRespondInitData(String machineId) {
+    public void onRespondInitData(String machineId, InitRespondResult respondResult) {
         // 获取最低负载的服务地址
-        SecuritySyncEntity entity = SecuritySyncBoot.getInstance().getLowLoadServer();
+        SecuritySyncPayloadData entity = SecuritySyncBoot.getInstance().getLowLoadServer();
         if (entity != null) {
             //先同步machine id
             ServerSyncStatusListener syncListener = new ServerSyncStatusListener(machineId, entity, mServerChannelImage);
@@ -127,9 +131,18 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
             LogDog.w("## start sync client machine id data to low load server, mid : " + mContext.getMachineId());
             // 如果当前服务不是最低负载的服务，则让客户端切换,返回低负载的服务地址
 //            mServerChannelImage.respondInitData(machineId, InitResult.SERVER_IP.getCode(), lowLoadServerHost.getBytes());
-            return true;
         }
-        return false;
+        respondResult.finish(entity != null);
+    }
+
+    @Override
+    public void onRepeatMachine(String machineId) {
+        IStateMachine<Integer> stateMachine = getStatusMachine();
+        if (stateMachine.getState() == NetTaskStatus.RUN) {
+            INetFactory<NioClientTask> factory = OpContext.getInstance().getBClientFactory();
+            factory.getNetTaskComponent().addUnExecTask(this);
+            LogDog.w("## found repeat machine id, close channel !!! " + machineId);
+        }
     }
 
     @Override
@@ -138,8 +151,8 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
     }
 
     @Override
-    public void onBindClientData(String requestId, MultiByteBuffer buffer) {
-        byte[] data = buffer.array();
+    public void onBindClientData(String requestId, MultiBuffer buffer) {
+        byte[] data = buffer.asByte();
         mServerChannelImage.sendTransDataFromServer(requestId, data);
     }
 

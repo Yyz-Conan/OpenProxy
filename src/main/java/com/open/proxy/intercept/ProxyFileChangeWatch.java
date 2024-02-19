@@ -12,7 +12,7 @@ public class ProxyFileChangeWatch extends BaseFileChangeWatch {
 
     @Override
     public void onTargetChange(String targetFileName) {
-        if (targetFileName.equals(mFileName)) {
+        if (targetFileName.startsWith(mFileName)) {
             ProxyFilterManager.getInstance().loadProxyTable(getTargetFile());
         }
     }

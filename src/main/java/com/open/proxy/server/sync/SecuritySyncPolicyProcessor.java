@@ -13,11 +13,11 @@ public class SecuritySyncPolicyProcessor implements ISecurityPolicyProcessor {
      */
     private static final int TWO_DAY = 1000 * 60 * 60 * 24 * 2;
 
-    private SecuritySyncContext mContext;
-
     public SecuritySyncPolicyProcessor(SecuritySyncContext context) {
         mContext = context;
     }
+
+    private SecuritySyncContext mContext;
 
     @Override
     public boolean onCheckTime(long time) {
@@ -46,10 +46,6 @@ public class SecuritySyncPolicyProcessor implements ISecurityPolicyProcessor {
         return false;
     }
 
-    @Override
-    public boolean onCheckChannelId(String channelId) {
-        return true;
-    }
 
     @Override
     public void onUnusualBehavior(String host, UnusualBehaviorType unusualBehaviorType) {

@@ -14,6 +14,7 @@ import com.open.proxy.OpContext;
 import com.open.proxy.server.http.client.LocalReceptionProxyClient;
 import com.open.proxy.server.http.client.RemoteReceptionProxyClient;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,9 +36,9 @@ public class MultipleProxyServer extends AbsSecurityServer {
         mContext = context;
     }
 
+
     @Override
-    protected void onBeReadyChannel(ServerSocketChannel channel) {
-        super.onBeReadyChannel(channel);
+    protected void onBeReadyChannel(SelectionKey selectionKey, ServerSocketChannel channel) {
         LogDog.d("## localProxy server start success : " + getHost() + ":" + getPort());
         ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
         mIsServerMode = cFileEnvoy.getBooleanValue(IConfigKey.CONFIG_IS_SERVER_MODE);

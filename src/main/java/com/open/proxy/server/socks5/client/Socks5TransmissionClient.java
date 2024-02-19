@@ -1,25 +1,26 @@
 package com.open.proxy.server.socks5.client;
 
 
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.joggle.INetReceiver;
 import com.jav.net.component.joggle.ICacheComponent;
-import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
+import com.open.proxy.protocol.DataPacketTag;
+import com.open.proxy.protocol.HtmlGenerator;
 import com.open.proxy.server.BindClientTask;
 import com.open.proxy.server.joggle.ISocks5ProcessListener;
 import com.open.proxy.server.socks5.DecryptionReceiver;
 import com.open.proxy.server.socks5.EncryptionSender;
 import com.open.proxy.server.socks5.Socks5DecryptionReceiver;
-import com.open.proxy.protocol.DataPacketTag;
-import com.open.proxy.protocol.HtmlGenerator;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
  * 连接代理服务端,作用于中转数据
  */
-public class Socks5TransmissionClient extends BindClientTask implements INetReceiver<MultiByteBuffer> {
+public class Socks5TransmissionClient extends BindClientTask implements INetReceiver<MultiBuffer> {
 
     private ISocks5ProcessListener mListener;
     private String mRealHost;
@@ -53,7 +54,7 @@ public class Socks5TransmissionClient extends BindClientTask implements INetRece
 
     private void enableProxy() {
         byte[] data = HtmlGenerator.httpsTunnelEstablished();
-        mListener.onDownStreamData(new MultiByteBuffer(data));
+        mListener.onDownStreamData(new MultiBuffer(data));
     }
 
     public String getRealHost() {
@@ -76,7 +77,7 @@ public class Socks5TransmissionClient extends BindClientTask implements INetRece
         byte[] targetInfo = createTargetInfoProtocol(realHost, realPort);
         EncryptionSender sender = getSender();
         ICacheComponent component = sender.getCacheComponent();
-        component.addLastData(new MultiByteBuffer(targetInfo));
+        component.addLastData(new MultiBuffer(targetInfo));
         //        sender.sendData(new MultiByteBuffer(targetInfo));
         // 发送完hello数据,切换tag(PACK_SOCKS5_DATA_TAG)用于中转数据
         sender.setEncodeTag(DataPacketTag.PACK_SOCKS5_DATA_TAG);
@@ -111,13 +112,13 @@ public class Socks5TransmissionClient extends BindClientTask implements INetRece
 
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
-        getSender().setChannel(getSelectionKey(), channel);
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        getSender().setChannel(selectionKey, channel);
     }
 
 
     @Override
-    public void onReceiveFullData(MultiByteBuffer buffer) {
+    public void onReceiveFullData(MultiBuffer buffer) {
         mListener.onDownStreamData(buffer);
     }
 
