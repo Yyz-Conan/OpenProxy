@@ -6,4 +6,5 @@ classes/
 src/test/
 build/
 monitor.page
+src/main/resources/channelTraffic.console
 LogDog/
