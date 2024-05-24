@@ -99,7 +99,7 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
     }
 
     @Override
-    public void onCreateConnect(String requestId, String realHost, int port) {
+    public void onCreateConnect(TransOperateCode oCode, String requestId, String realHost, int port) {
         // 如果不为空表示这是新的请求目标，需要创建目标链接
         TransProxyClient client;
         synchronized (mProxyClientMap) {
@@ -158,7 +158,7 @@ public class RemoteReceptionProxyClient extends AbsSecurityServerReception imple
 
     @Override
     public void onBindClientByError(String requestId) {
-        byte operateCode = (byte) (TransOperateCode.ADDRESS.getCode() | ConstantCode.REP_EXCEPTION_CODE);
+        byte operateCode = (byte) (TransOperateCode.TCP_ADDRESS.getCode() | ConstantCode.REP_EXCEPTION_CODE);
         mServerChannelImage.respondRequestData(requestId, operateCode);
     }
 

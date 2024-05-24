@@ -49,6 +49,7 @@ behance.net
 bam.nr-data.net
 netflix.com
 wikipedia.org
+wikimedia.org
 ftchinese.com
 rfa.org
 wsj.com
@@ -62,6 +63,9 @@ bloomberg.com
 apkpure.com
 reddit.com
 openai.com
+cloudflare.com
+1drv.ms
+datadoghq.com
 oaistatic.com
 funcaptcha.com
 arkoselabs.com
@@ -111,6 +115,9 @@ gstatic.com
 ping.pe
 olehdtv.com
 olevod1.com
+outlook.com
+microsoft.com
+client-api.arkoselabs.com
 chat.forefront.ai
 streaming-worker.forefront.workers.dev
 typingmind.com
@@ -126,6 +133,10 @@ cdtlas.com
 v82u1l.com
 iz8qkg.com
 dandanzan.com
+bandwagonhost.com
+v2ray.com
+shadowsocks.org
+chatgpt.com
 #-------tmp---------------
 yourbittorrent2.com
 fireletsencrypt.org

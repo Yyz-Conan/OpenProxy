@@ -3,6 +3,7 @@ package com.open.proxy.server.sync;
 import com.jav.net.nio.NioUdpFactory;
 import com.open.proxy.server.sync.bean.SecuritySyncPayloadData;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,13 +43,13 @@ public class SecuritySyncBoot {
     }
 
 
-    public void init(SecuritySyncContext context) {
+    public void init(SecuritySyncContext context) throws IOException {
         if (mIsInit) {
             return;
         }
         mContext = context;
 
-        mSyncInfo = new HashMap();
+        mSyncInfo = new HashMap<>();
         mLocalSyncInfo = new SecuritySyncPayloadData(context.getMachineId(), context.getSyncHost());
         mLocalSyncInfo.setPort(context.getProxyPort());
 

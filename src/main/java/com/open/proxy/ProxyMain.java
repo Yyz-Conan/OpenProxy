@@ -19,6 +19,7 @@ import com.open.proxy.server.sync.SecuritySyncBoot;
 import com.open.proxy.server.sync.SecuritySyncContext;
 import com.open.proxy.server.update.UpdateServer;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -38,13 +39,13 @@ public class ProxyMain {
     // http://www.httpclient.cn
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         init();
         startServer();
         shutdownHook();
     }
 
-    private static void init() {
+    private static void init() throws IOException {
         initConfig();
         initIpBack();
         initMachineIdList();
@@ -52,7 +53,7 @@ public class ProxyMain {
     }
 
 
-    private static void initConfig() {
+    private static void initConfig() throws IOException {
         OpContext.getInstance().init();
         LogDog.initLogSavePath(OpContext.getInstance().getCurrentWorkDir(), LOG_TAG);
 
@@ -116,7 +117,7 @@ public class ProxyMain {
         ProxyFilterManager.getInstance().loadProxyTable(proxyFilePath);
     }
 
-    private static void startServer() {
+    private static void startServer() throws IOException {
         ConfigFileEnvoy cFileEnvoy = OpContext.getInstance().getConfigFileEnvoy();
 
         SecurityChannelContext.Builder builder = new SecurityChannelContext.Builder();

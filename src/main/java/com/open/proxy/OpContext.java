@@ -9,6 +9,7 @@ import com.jav.net.nio.NioClientTask;
 import com.open.proxy.utils.PasswordUtils;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Open Proxy 环境配置信息
@@ -66,7 +67,7 @@ public class OpContext {
         return mMachineFileEnvoy;
     }
 
-    public void init() {
+    public void init() throws IOException {
         mCurrentWorkDir = System.getProperty(KEY_USER_DIR) + File.separator;
         mCurrentCommand = System.getProperty(KEY_COMMAND);
         mBClientFactory.open();

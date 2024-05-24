@@ -56,9 +56,10 @@ public class SyncProtocol extends AbsProxyProtocol {
     }
 
     @Override
-    public byte activityCode() {
+    public byte actionCode() {
         return SyncActivityCode.SYNC.getCode();
     }
+
 
     @Override
     public ByteBuffer toData(ICipherComponent encryptComponent) {
@@ -73,7 +74,7 @@ public class SyncProtocol extends AbsProxyProtocol {
 
         ByteBuffer buffer = ByteBuffer.allocate(length);
         buffer.putLong(time());
-        buffer.put(activityCode());
+        buffer.put(actionCode());
         buffer.put(mMachineId);
         buffer.put(operateCode());
 

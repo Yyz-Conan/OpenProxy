@@ -5,6 +5,7 @@ import com.jav.common.log.LogDog;
 import com.jav.net.nio.NioClientFactory;
 import com.jav.net.security.channel.base.AbsSecurityServer;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -23,7 +24,11 @@ public class UpdateServer extends AbsSecurityServer {
     protected void onBeReadyChannel(SelectionKey selectionKey, ServerSocketChannel channel) {
         LogDog.d("==> Update server start success : " + getHost() + ":" + getPort());
         mUpdateClientFactory = new NioClientFactory();
-        mUpdateClientFactory.open();
+        try {
+            mUpdateClientFactory.open();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

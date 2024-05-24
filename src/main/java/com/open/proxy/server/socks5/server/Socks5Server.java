@@ -6,6 +6,7 @@ import com.jav.net.security.channel.base.AbsSecurityServer;
 import com.open.proxy.server.socks5.Socks5NetFactory;
 import com.open.proxy.server.socks5.client.Socks5InteractiveClient;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -21,7 +22,11 @@ public class Socks5Server extends AbsSecurityServer {
     @Override
     protected void onBeReadyChannel(SelectionKey selectionKey, ServerSocketChannel channel) {
         LogDog.d("==> Socks5 proxy server start success : " + getHost() + ":" + getPort());
-        Socks5NetFactory.getFactory().open();
+        try {
+            Socks5NetFactory.getFactory().open();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
